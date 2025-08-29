@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RaskNamus - Jūsų Nauji Namai</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .hero-bg {
+            background-image: url('https://placehold.co/1920x1080/e2e8f0/64748b?text=Modernus+Interjeras');
+            background-size: cover;
+            background-position: center;
+        }
+        .btn {
+            @apply w-full px-6 py-3 text-center font-semibold rounded-lg transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2;
+        }
+        .btn-primary {
+            @apply bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500;
+        }
+        .btn-secondary {
+            @apply bg-gray-200 text-gray-800 hover:bg-gray-300 focus:ring-gray-400;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <!-- Navigacijos juosta -->
+    <nav class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="#" class="text-2xl font-bold text-blue-600">RaskNamus</a>
+            <div class="hidden md:flex items-center space-x-6">
+                <a href="#" class="text-gray-600 hover:text-blue-600">Kaip tai veikia?</a>
+                <a href="#" class="text-gray-600 hover:text-blue-600">Apie mus</a>
+                <a href="#" class="text-gray-600 hover:text-blue-600">Pagalba</a>
+            </div>
+            <!-- Mobilus meniu mygtukas (čia galima pridėti funkcionalumą su JS) -->
+            <button class="md:hidden text-gray-600 hover:text-blue-600">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
+                </svg>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Pagrindinis (Hero) blokas -->
+    <header class="relative hero-bg">
+        <div class="absolute inset-0 bg-black opacity-40"></div>
+        <div class="relative container mx-auto px-6 py-24 md:py-32 lg:py-40 flex flex-col items-center text-center text-white">
+            <h1 class="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight mb-4">Jūsų nauji namai laukia</h1>
+            <p class="text-lg md:text-xl max-w-3xl mb-12 text-gray-200">Patogiausias būdas rasti, išnuomoti ir valdyti būstą. Prisijunkite prie mūsų bendruomenės jau šiandien.</p>
+
+            <div class="w-full max-w-4xl bg-white/10 backdrop-blur-sm p-6 rounded-2xl">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Kortelė Nuomininkui -->
+                    <div class="bg-white/90 text-gray-800 p-8 rounded-xl shadow-lg flex flex-col items-center transform hover:-translate-y-2 transition-transform duration-300">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mb-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                        </svg>
+                        <h2 class="text-2xl font-bold mb-2">Esu nuomininkas</h2>
+                        <p class="text-center text-gray-600 mb-6">Ieškau idealaus būsto nuomai.</p>
+                        <div class="w-full space-y-3">
+                           <button class="btn btn-primary">Registruotis</button>
+                           <button class="btn btn-secondary">Prisijungti</button>
+                        </div>
+                    </div>
+
+                    <!-- Kortelė Nuomotojui -->
+                    <div class="bg-white/90 text-gray-800 p-8 rounded-xl shadow-lg flex flex-col items-center transform hover:-translate-y-2 transition-transform duration-300">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mb-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h7.5" />
+                        </svg>
+                        <h2 class="text-2xl font-bold mb-2">Esu nuomotojas</h2>
+                        <p class="text-center text-gray-600 mb-6">Noriu patogiai išnuomoti savo turtą.</p>
+                        <div class="w-full space-y-3">
+                           <button class="btn btn-primary">Registruotis</button>
+                           <button class="btn btn-secondary">Prisijungti</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+    
+    <!-- Privalumų sekcija -->
+    <section class="py-20 bg-white">
+        <div class="container mx-auto px-6">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-gray-800">Kodėl verta rinktis mus?</h2>
+                <p class="text-gray-600 mt-2">Suteikiame visus įrankius sėkmingam nuomos procesui.</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
+                <!-- Privalumas 1 -->
+                <div class="text-center p-6 border border-gray-200 rounded-lg">
+                    <div class="flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 text-blue-600 mx-auto mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Patogi paieška</h3>
+                    <p class="text-gray-600">Išplėstiniai filtrai padės greitai rasti tai, ko ieškote.</p>
+                </div>
+                <!-- Privalumas 2 -->
+                <div class="text-center p-6 border border-gray-200 rounded-lg">
+                    <div class="flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 text-blue-600 mx-auto mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a2 2 0 01-2-2V7a2 2 0 012-2h4a2 2 0 002-2z" /></svg>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Tiesioginis bendravimas</h3>
+                    <p class="text-gray-600">Bendraukite tiesiogiai per mūsų saugią pranešimų sistemą.</p>
+                </div>
+                <!-- Privalumas 3 -->
+                <div class="text-center p-6 border border-gray-200 rounded-lg">
+                     <div class="flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 text-blue-600 mx-auto mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Saugūs sandoriai</h3>
+                    <p class="text-gray-600">Sutartys ir mokėjimai valdomi saugiai ir patikimai.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Poraštė (Footer) -->
+    <footer class="bg-gray-800 text-white">
+        <div class="container mx-auto px-6 py-10">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <h3 class="text-xl font-bold mb-4">RaskNamus</h3>
+                    <p class="text-gray-400">Jungiame žmones su jų svajonių namais.</p>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-3">Platforma</h4>
+                    <ul>
+                        <li class="mb-2"><a href="#" class="hover:text-blue-400">Nuomininkams</a></li>
+                        <li class="mb-2"><a href="#" class="hover:text-blue-400">Nuomotojams</a></li>
+                        <li class="mb-2"><a href="#" class="hover:text-blue-400">Kainos</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-3">Įmonė</h4>
+                    <ul>
+                        <li class="mb-2"><a href="#" class="hover:text-blue-400">Apie mus</a></li>
+                        <li class="mb-2"><a href="#" class="hover:text-blue-400">Kontaktai</a></li>
+                        <li class="mb-2"><a href="#" class="hover:text-blue-400">Karjera</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-3">Teisinė informacija</h4>
+                    <ul>
+                        <li class="mb-2"><a href="#" class="hover:text-blue-400">Privatumo politika</a></li>
+                        <li class="mb-2"><a href="#" class="hover:text-blue-400">Naudojimosi taisyklės</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-8 pt-6 text-center text-gray-500">
+                <p>&copy; 2025 RaskNamus. Visos teisės saugomos.</p>
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>
