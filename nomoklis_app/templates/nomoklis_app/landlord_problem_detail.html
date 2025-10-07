@@ -1,0 +1,86 @@
+{% extends "nomoklis_app/_landlord_base.html" %}
+
+{% block title %}Problemos valdymas{% endblock %}
+
+{% block content %}
+{# Pakeistas tinklelio išdėstymas iš lg:grid-cols-3 į lg:grid-cols-5 #}
+<div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
+
+    <div class="lg:col-span-3 bg-white p-6 rounded-lg shadow-md">
+        <h1 class="text-2xl font-bold text-gray-800">Problemos valdymas</h1>
+        <p class="text-sm text-gray-500 mt-1">Objektas: {{ problem.lease.property.street }}</p>
+
+        <div class="mt-6 border-t pt-6">
+            <dl class="space-y-4">
+                <div>
+                    <dt class="font-medium text-gray-600">Problemos tipas</dt>
+                    <dd class="mt-1 text-gray-800">{{ problem.get_problem_type_display }}</dd>
+                </div>
+                <div>
+                    <dt class="font-medium text-gray-600">Aprašymas</dt>
+                    <dd class="mt-1 text-gray-800 whitespace-pre-wrap">{{ problem.description }}</dd>
+                </div>
+                <div>
+                    <dt class="font-medium text-gray-600">Nuotraukos</dt>
+                    <dd class="mt-2 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                        {% for image in problem.images.all %}
+                        <a href="{{ image.image.url }}" target="_blank">
+                            <img src="{{ image.image.url }}" alt="Problemos nuotrauka" class="rounded-lg object-cover h-24 w-full">
+                        </a>
+                        {% empty %}
+                        <p class="text-sm text-gray-500 col-span-full">Nuotraukų nepateikta.</p>
+                        {% endfor %}
+                    </dd>
+                </div>
+            </dl>
+        </div>
+    </div>
+
+    <div class="lg:col-span-2 space-y-6">
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <form method="post" class="space-y-4">
+                {% csrf_token %}
+                <div>
+                    <label for="{{ form.status.id_for_label }}" class="block text-sm font-medium text-gray-700">Būsena</label>
+                    {{ form.status }}
+                </div>
+                <div>
+                    <label for="{{ form.resolution_costs.id_for_label }}" class="block text-sm font-medium text-gray-700">Išsprendimo išlaidos (€)</label>
+                    {{ form.resolution_costs }}
+                </div>
+                <div>
+                    <label for="{{ form.paid_by.id_for_label }}" class="block text-sm font-medium text-gray-700">Kas apmokėjo?</label>
+                    {{ form.paid_by }}
+                </div>
+                <div>
+                    <label for="{{ form.comment.id_for_label }}" class="block text-sm font-medium text-gray-700">Pridėti komentarą</label>
+                    {{ form.comment }}
+                </div>
+                <div class="pt-2">
+                    <button type="submit" class="w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700">Išsaugoti pakeitimus</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">Komentarų istorija</h2>
+            <ul class="space-y-4">
+                {% for update in updates %}
+                <li class="flex space-x-3">
+                    <img class="h-8 w-8 rounded-full" src="{{ update.author.profile.profile_image.url }}" alt="">
+                    <div class="flex-1 bg-gray-50 p-3 rounded-lg">
+                        <div class="flex justify-between">
+                            <p class="font-semibold text-sm text-gray-800">{{ update.author.get_full_name }}</p>
+                            <p class="text-xs text-gray-500">{{ update.created_at|date:"Y-m-d H:i" }}</p>
+                        </div>
+                        <p class="text-sm text-gray-700 mt-1">{{ update.comment }}</p>
+                    </div>
+                </li>
+                {% empty %}
+                <li class="text-sm text-gray-500">Komentarų kol kas nėra.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,69 @@
+{% extends "nomoklis_app/_public_base.html" %}
+{% load i18n %}
+
+{% block title %}Privatumo Politika{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+    <div class="bg-white p-8 rounded-lg shadow-md">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6">Privatumo Politika</h1>
+
+        <div class="text-gray-700 space-y-4">
+            <p>Paskutinį kartą atnaujinta: {% now "Y-m-d" %}</p>
+
+            <p>Ši privatumo politika (toliau – Politika) paaiškina, kaip [Jūsų įmonės pavadinimas] (toliau – mes, Paslaugų teikėjas) renka, naudoja ir saugo jūsų asmens duomenis, kai naudojatės interneto svetaine Nomoklis.lt (toliau – Svetainė).</p>
+
+            <h2 class="text-2xl font-bold text-gray-800 pt-4">1. Kokius duomenis renkame?</h2>
+            <p>Mes renkame šiuos jūsų asmens duomenis:</p>
+            <ul class="list-disc list-inside pl-4 space-y-2">
+                <li><strong>Registracijos duomenys:</strong> vardas, pavardė, el. pašto adresas, slaptažodis.</li>
+                <li><strong>Profilio duomenys:</strong> profilio nuotrauka, miestas, aprašymas „Apie mane“.</li>
+                <li><strong>Skelbimų duomenys:</strong> NT objekto adresas, kaina, aprašymas, nuotraukos ir kiti parametrai.</li>
+                <li><strong>Komunikacijos duomenys:</strong> susirašinėjimo turinys per vidinę pranešimų sistemą.</li>
+                <li><strong>Techniniai duomenys:</strong> IP adresas, naršyklės tipas, prisijungimo laikas ir kiti techniniai duomenys, renkami automatiškai.</li>
+                <li><strong>Mokėjimų duomenys:</strong> Nors mes tiesiogiai nerenkame ir nesaugome jūsų mokėjimo kortelių duomenų, mūsų partneris „Stripe“ juos apdoroja mokėjimams įvykdyti.</li>
+            </ul>
+
+            <h2 class="text-2xl font-bold text-gray-800 pt-4">2. Kaip naudojame jūsų duomenis?</h2>
+            <p>Jūsų duomenis naudojame šiems tikslams:</p>
+            <ul class="list-disc list-inside pl-4 space-y-2">
+                <li>Suteikti, palaikyti ir administruoti Svetainės paslaugas.</li>
+                <li>Užtikrinti sklandų bendravimą tarp nuomotojų ir nuomininkų.</li>
+                <li>Personalizuoti jūsų patirtį Svetainėje.</li>
+                <li>Apdoroti mokėjimus už paslaugas.</li>
+                <li>Užtikrinti Svetainės saugumą ir apsisaugoti nuo sukčiavimo.</li>
+                <li>Vykdyti teisinius įsipareigojimus.</li>
+            </ul>
+
+            <h2 class="text-2xl font-bold text-gray-800 pt-4">3. Duomenų atskleidimas trečiosioms šalims</h2>
+            <p>Mes galime atskleisti jūsų duomenis šioms trečiosioms šalims:</p>
+            <ul class="list-disc list-inside pl-4 space-y-2">
+                <li><strong>Kitiems Svetainės vartotojams:</strong> pavyzdžiui, nuomotojas mato nuomininko, pateikusio užklausą, vardą, o nuomininkas – nuomotojo vardą ir kontaktinę informaciją, jei ji pateikta.</li>
+                <li><strong>Paslaugų teikėjams:</strong> pvz., mokėjimų apdorojimo partneriui „Stripe“, serverių nuomos paslaugų teikėjams.</li>
+                <li><strong>Teisėsaugos institucijoms:</strong> jei to reikalauja įstatymai.</li>
+            </ul>
+            <p>Mes neparduodame ir nenuomojame jūsų asmens duomenų jokioms trečiosioms šalims rinkodaros tikslais.</p>
+
+            <h2 class="text-2xl font-bold text-gray-800 pt-4">4. Jūsų teisės</h2>
+            <p>Jūs, kaip duomenų subjektas, turite šias teises:</p>
+            <ul class="list-disc list-inside pl-4 space-y-2">
+                <li>Teisę susipažinti su savo duomenimis.</li>
+                <li>Teisę reikalauti ištaisyti netikslius duomenis.</li>
+                <li>Teisę reikalauti ištrinti duomenis („teisė būti pamirštam“).</li>
+                <li>Teisę apriboti duomenų tvarkymą.</li>
+                <li>Teisę į duomenų perkeliamumą.</li>
+            </ul>
+            <p>Norėdami pasinaudoti šiomis teisėmis, susisiekite su mumis el. paštu info@nomoklis.lt.</p>
+
+            <h2 class="text-2xl font-bold text-gray-800 pt-4">5. Slapukai (Cookies)</h2>
+            <p>Svetainėje naudojame slapukus, kad užtikrintume sklandų jos veikimą ir pagerintume jūsų naršymo patirtį. Slapukai yra maži tekstiniai failai, saugomi jūsų įrenginyje. Jūs galite valdyti ir/arba ištrinti slapukus pagal savo pageidavimus.</p>
+
+            <h2 class="text-2xl font-bold text-gray-800 pt-4">6. Politikos pakeitimai</h2>
+            <p>Mes pasiliekame teisę bet kada atnaujinti šią Politiką. Apie esminius pakeitimus informuosime jus Svetainėje arba el. paštu. Rekomenduojame periodiškai peržiūrėti šią Politiką.</p>
+
+            <h2 class="text-2xl font-bold text-gray-800 pt-4">7. Kontaktinė informacija</h2>
+            <p>Jei turite klausimų dėl šios Privatumo politikos, susisiekite su mumis el. paštu: info@nomoklis.lt.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visi pranešimai</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="flex h-screen bg-gray-100">
+        {% if user.profile.user_type == 'nuomotojas' %}
+            {% include 'nomoklis_app/_sidebar.html' %}
+        {% else %}
+            {% include 'nomoklis_app/_tenant_sidebar.html' %}
+        {% endif %}
+
+        <div class="flex-1 flex flex-col overflow-hidden">
+            {% include 'nomoklis_app/_header.html' %}
+            <main class="flex-1 overflow-x-hidden overflow-y-auto">
+                <div class="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
+                    <h1 class="text-3xl font-bold text-gray-800 mb-6">Visi pranešimai</h1>
+                    <div class="bg-white rounded-lg shadow-md">
+                        <ul class="divide-y divide-gray-200">
+                            {% for notification in notifications %}
+                            <a href="{% url 'mark_notification_as_read' notification.id %}" class="block hover:bg-gray-50">
+                                <li class="p-4 {% if not notification.is_read %}bg-blue-50{% endif %}">
+                                    <p class="text-sm text-gray-800">{{ notification.message }}</p>
+                                    <p class="text-xs text-gray-500 mt-1">{{ notification.created_at|date:"Y-m-d H:i" }}</p>
+                                </li>
+                            </a>
+                            {% empty %}
+                            <li class="p-6 text-center text-gray-500">Pranešimų nėra.</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+</body>
+</html>

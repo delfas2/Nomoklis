@@ -1,0 +1,84 @@
+{% extends "nomoklis_app/_landlord_base.html" %}
+
+{% block title %}Gautos Užklausos{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-semibold text-gray-900">Gautos nuomos užklausos</h1>
+
+{% if messages %}
+    {% for message in messages %}
+    <div class="my-4 p-4 rounded-md {% if message.tags == 'success' %} bg-green-100 text-green-800 {% elif message.tags == 'error' %} bg-red-100 text-red-800 {% else %} bg-blue-100 text-blue-800 {% endif %}" role="alert">
+        {{ message|safe }}
+    </div>
+    {% endfor %}
+{% endif %}
+
+<div class="mt-8 flex flex-col">
+    <div class="-my-2 -mx-4 overflow-x-auto sm:-mx-6 lg:-mx-8">
+        <div class="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">
+            <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
+                <table class="min-w-full divide-y divide-gray-300">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">Nuomininkas</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">NT Objektas</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Būsena</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Gauta</th>
+                            <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-6">
+                                <span class="sr-only">Veiksmai</span>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 bg-white">
+                        {% for request in requests %}
+                        <tr>
+                            <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm sm:pl-6">
+                                <div class="flex items-center">
+                                    <div class="h-10 w-10 flex-shrink-0">
+                                        <img class="h-10 w-10 rounded-full" src="{{ request.tenant.profile.profile_image.url }}" alt="">
+                                    </div>
+                                    <div class="ml-4">
+                                        <div class="font-medium text-gray-900">{{ request.tenant.get_full_name }}</div>
+                                        <div class="text-gray-500">{{ request.tenant.email }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                <div class="text-gray-900">{{ request.property.street }}</div>
+                                <div class="text-gray-500">{{ request.property.city }}</div>
+                            </td>
+                            <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                {% if request.status == 'pending' %}
+                                <span class="inline-flex rounded-full bg-yellow-100 px-2 text-xs font-semibold leading-5 text-yellow-800">Laukiama atsakymo</span>
+                                {% elif request.status == 'accepted' %}
+                                <span class="inline-flex rounded-full bg-green-100 px-2 text-xs font-semibold leading-5 text-green-800">Priimta</span>
+                                {% elif request.status == 'rejected' %}
+                                <span class="inline-flex rounded-full bg-red-100 px-2 text-xs font-semibold leading-5 text-red-800">Atmesta</span>
+                                {% endif %}
+                            </td>
+                            <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{{ request.created_at|date:"Y-m-d" }}</td>
+                            <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+                                {% if request.status == 'pending' %}
+                                <a href="{% url 'prepare_and_edit_contract' request.id %}" class="text-indigo-600 hover:text-indigo-900">Ruošti sutartį<span class="sr-only">, {{ request.tenant.get_full_name }}</span></a>
+                                <a href="{% url 'reject_rental_request' request.id %}" class="ml-4 text-red-600 hover:text-red-900">Atmesti</a>
+                                {% elif request.status == 'accepted' and request.associated_lease %}
+                                <a href="{% url 'lease_invoices' request.associated_lease.id %}" class="text-blue-600 hover:text-blue-900">Peržiūrėti sąskaitas</a>
+                                {% else %}
+                                 <a href="{% url 'delete_rental_request' request.id %}" class="text-gray-500 hover:text-gray-700">Ištrinti</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-10 text-gray-500">
+                                Jūs neturite gautų nuomos užklausų.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

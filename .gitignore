@@ -1,0 +1,46 @@
+# ====================================
+# Jautrūs Duomenys ir Konfigūracija
+# ====================================
+# BŪTINA: Slapti kintamieji, slaptažodžiai ir raktai.
+.env
+*.env
+
+# ====================================
+# Python ir Django
+# ====================================
+# Python cache ir kompiliuoti failai
+__pycache__/
+*.pyc
+*~$
+.ipynb_checkpoints
+
+# Virtuali aplinka (venv)
+venv/
+.venv/
+
+# Django media files (vartotojo įkelti failai)
+# Nereikia laikyti versijų kontrolėje.
+/media/*
+!/media/.gitkeep # Galite pridėti šį failą, kad išsaugotumėte tuščią katalogą
+
+# ====================================
+# Docker
+# ====================================
+# Docker sukūrimo metu nereikalingi laikinieji failai
+.dockerignore
+!Dockerfile
+!docker-compose.yml
+
+# ====================================
+# IDE / Redaktoriaus failai
+# ====================================
+# VS Code
+.vscode/
+# Mac OS X
+.DS_Store
+
+# ====================================
+# Statinių failų tvarkymas
+# ====================================
+# BŪTINA: Statinių failų katalogas, kuris generuojamas 'collectstatic' metu
+/staticfiles/

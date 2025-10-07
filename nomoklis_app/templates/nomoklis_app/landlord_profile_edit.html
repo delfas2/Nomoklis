@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redaguoti Profilį</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .sidebar-active { background-color: #eff6ff; color: #1d4ed8; font-weight: 600; }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="flex h-screen bg-gray-100">
+        {% include 'nomoklis_app/_sidebar.html' %}
+        <div class="flex-1 flex flex-col overflow-hidden">
+            {% include 'nomoklis_app/_header.html' %}
+            
+            <main class="flex-1 overflow-x-hidden overflow-y-auto">
+                <div class="max-w-3xl mx-auto p-4 sm:p-6 lg:p-8 w-full">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="bg-white p-8 rounded-lg shadow-md">
+                            <h2 class="text-2xl font-bold text-gray-800 mb-6">Redaguoti Profilio Informaciją</h2>
+                            <div class="space-y-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">{{ user_form.first_name.label }}</label>
+                                    {{ user_form.first_name }}
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">{{ user_form.last_name.label }}</label>
+                                    {{ user_form.last_name }}
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">{{ user_form.email.label }}</label>
+                                    {{ user_form.email }}
+                                </div>
+                                 <div>
+                                    <label class="block text-sm font-medium text-gray-700">{{ profile_form.city.label }}</label>
+                                    {{ profile_form.city }}
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">{{ profile_form.about_me.label }}</label>
+                                    {{ profile_form.about_me }}
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">{{ profile_form.profile_image.label }}</label>
+                                    <img class="w-24 h-24 rounded-full object-cover my-2" src="{{ user.profile.profile_image.url }}">
+                                    {{ profile_form.profile_image }}
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Slaptažodis</label>
+                                    <div class="mt-1">
+                                        <a href="{% url 'change_password' %}" class="text-blue-600 hover:underline">Keisti slaptažodį</a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-8 flex justify-end gap-4 border-t border-gray-200 pt-6">
+                                <a href="{% url 'landlord_profile' %}" class="bg-gray-300 text-gray-800 font-semibold py-2 px-5 rounded-lg hover:bg-gray-400">Atšaukti</a>
+                                <button type="submit" class="bg-blue-600 text-white font-semibold py-2 px-5 rounded-lg hover:bg-blue-700">Išsaugoti pakeitimus</button>
+                            </div>
+                        </div>
+                    </form>
+
+                    <div class="mt-8 bg-white p-8 rounded-lg shadow-md border-t border-gray-200">
+                        <h3 class="text-lg font-medium text-red-600">Paskyros ištrynimas</h3>
+                        <p class="mt-1 text-sm text-gray-500">Paspaudus šį mygtuką, jūsų paskyra ir visi susiję duomenys bus negrįžtamai pašalinti. Šio veiksmo anuliuoti negalėsite.</p>
+                        <a href="{% url 'delete_account' %}" class="mt-4 inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">Ištrinti paskyrą</a>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+</body>
+</html>

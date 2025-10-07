@@ -1,0 +1,33 @@
+<div class="w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden">
+    <div class="p-8">
+        <h2 class="text-2xl font-bold mb-2 text-center">Pateikti nuomos užklausą</h2>
+        <p class="text-gray-600 mb-6 text-center">Objektas: <span class="font-semibold">{{ property.street }}</span></p>
+
+        <form method="post" action="{% url 'submit_rental_request' property.id %}" class="space-y-4">
+            {% csrf_token %}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium">{{ form.start_date.label }}</label>
+                    {{ form.start_date }}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium">{{ form.end_date.label }} (nebūtina)</label>
+                    {{ form.end_date }}
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium">{{ form.offered_price.label }}</label>
+                {{ form.offered_price }}
+            </div>
+            <div>
+                <label class="block text-sm font-medium">{{ form.message.label }}</label>
+                {{ form.message }}
+            </div>
+            
+            <div class="flex justify-end space-x-4 pt-6">
+                <button type="button" class="cancel-request-btn bg-gray-200 text-gray-700 font-semibold py-2 px-6 rounded-lg hover:bg-gray-300">Atšaukti</button>
+                <button type="submit" class="bg-green-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-green-700">Siųsti užklausą</button>
+            </div>
+        </form>
+    </div>
+</div>

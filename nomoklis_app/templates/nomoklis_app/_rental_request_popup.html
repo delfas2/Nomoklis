@@ -1,0 +1,53 @@
+<div class="p-6">
+    <div class="flex justify-between items-start">
+        <h2 class="text-xl font-bold text-gray-800">Užklausa dėl "{{ req.property.street }}"</h2>
+        <button id="cancel-popup" class="text-gray-400 hover:text-gray-600">&times;</button>
+    </div>
+    <hr class="my-4">
+    
+    <div class="flex items-center space-x-4 mb-4">
+        <img class="h-16 w-16 rounded-full object-cover" src="{{ req.tenant.profile.profile_image.url }}" alt="Nuomininko nuotrauka">
+        <div>
+            <p class="font-semibold text-lg text-gray-900">{{ req.tenant.get_full_name }}</p>
+            <p class="text-sm text-gray-500">Atsiliepimų vidurkis: N/A</p> {# Ateityje galima įdėti reitingą #}
+        </div>
+    </div>
+
+    <div class="space-y-3 bg-gray-50 p-4 rounded-lg">
+        <div class="flex justify-between text-sm">
+            <span class="text-gray-600">Siūloma kaina:</span>
+            <span class="font-semibold text-gray-900">{{ req.offered_price|floatformat:"0" }} €/mėn.</span>
+        </div>
+        <div class="flex justify-between text-sm">
+            <span class="text-gray-600">Norima nuomos pradžia:</span>
+            <span class="font-semibold text-gray-900">{{ req.start_date|date:"Y-m-d" }}</span>
+        </div>
+        {% if req.end_date %}
+        <div class="flex justify-between text-sm">
+            <span class="text-gray-600">Norima nuomos pabaiga:</span>
+            <span class="font-semibold text-gray-900">{{ req.end_date|date:"Y-m-d" }}</span>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if req.message %}
+    <div class="mt-4">
+        <p class="text-sm font-medium text-gray-800 mb-2">Žinutė nuomotojui:</p>
+        <p class="text-sm text-gray-600 border-l-4 border-gray-200 pl-3 py-1">
+            {{ req.message }}
+        </p>
+    </div>
+    {% endif %}
+
+    <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-3">
+        <a href="{% url 'chat_room' req.tenant.id %}" class="w-full text-center bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300">
+            Susisiekti
+        </a>
+        <a href="{% url 'reject_rental_request' req.id %}" class="w-full text-center bg-red-100 text-red-700 font-semibold py-2 px-4 rounded-lg hover:bg-red-200">
+            Atmesti
+        </a>
+        <a href="{% url 'prepare_and_edit_contract' req.id %}" class="w-full text-center bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700">
+            Patvirtinti
+        </a>
+    </div>
+</div>

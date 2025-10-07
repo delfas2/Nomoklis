@@ -1,0 +1,13 @@
+<header class="flex justify-between items-center py-4 px-6 bg-white border-b-4 border-blue-600">
+    <div class="flex items-center">
+        <!-- Čia galima įdėti paieškos lauką, jei reikia -->
+    </div>
+
+    <div class="flex items-center">
+        <div class="relative">
+            <button class="relative z-10 block h-8 w-8 rounded-full overflow-hidden shadow focus:outline-none">
+                <img class="h-full w-full object-cover" src="{{ request.user.profile.profile_image.url }}" alt="Jūsų profilio nuotrauka">
+            </button>
+        </div>
+    </div>
+</header>

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pateikti skaitiklių rodmenis</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-gray-100">
+
+    <div class="flex h-screen bg-gray-100">
+        {% include 'nomoklis_app/_tenant_sidebar.html' %}
+
+        <div class="flex-1 flex flex-col overflow-hidden">
+            {% include 'nomoklis_app/_header.html' %}
+            <main class="flex-1 overflow-x-hidden overflow-y-auto">
+                <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+                    <h1 class="text-2xl font-bold text-gray-800 mb-6">Skaitiklių rodmenų pateikimas</h1>
+                    
+                    <form method="post" class="bg-white p-6 rounded-lg shadow-md space-y-6">
+                        {% csrf_token %}
+                        <p class="text-sm text-gray-600">Pateikite naujausius skaitiklių rodmenis už objektą <span class="font-semibold">{{ lease.property.street }}</span>. Šie duomenys bus nusiųsti nuomotojui.</p>
+
+                        <div>
+                            <label for="{{ form.electricity_reading.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ form.electricity_reading.label }}</label>
+                            {{ form.electricity_reading }}
+                        </div>
+                        <div>
+                            <label for="{{ form.hot_water_reading.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ form.hot_water_reading.label }}</label>
+                            {{ form.hot_water_reading }}
+                        </div>
+                        <div>
+                            <label for="{{ form.cold_water_reading.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ form.cold_water_reading.label }}</label>
+                            {{ form.cold_water_reading }}
+                        </div>
+                        
+                        <div>
+                            <label for="{{ form.gas_reading.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ form.gas_reading.label }}</label>
+                            {{ form.gas_reading }}
+                        </div>
+                        
+                        <div>
+                            <label for="{{ form.notes.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ form.notes.label }}</label>
+                            {{ form.notes }}
+                        </div>
+
+                        <div class="flex justify-end pt-4">
+                            <a href="{% url 'nuomininkas_dashboard' %}" class="bg-gray-200 text-gray-700 font-semibold py-2 px-6 rounded-lg hover:bg-gray-300">Atšaukti</a>
+                            <button type="submit" class="ml-4 bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-blue-700">Siųsti rodmenis</button>
+                        </div>
+                    </form>
+                </div>
+            </main>
+        </div>
+    </div>
+</body>
+</html>

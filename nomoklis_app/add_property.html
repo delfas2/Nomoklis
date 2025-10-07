@@ -1,0 +1,98 @@
+{% extends 'nomoklis_app/_landlord_base.html' %}
+
+{% block title %}Pridėti Naują NT Objektą{% endblock %}
+
+{% block content %}
+<div class="bg-white p-8 rounded-xl shadow-lg max-w-4xl mx-auto my-8">
+    <h1 class="text-3xl font-bold text-gray-800 mb-8">Pridėti naują NT objektą</h1>
+
+    <form method="post" enctype="multipart/form-data" class="space-y-8">
+        {% csrf_token %}
+
+        <div class="border-b pb-8">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">Pagrindinė informacija</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                    <label for="{{ form.street.id_for_label }}" class="block text-sm font-medium text-gray-700">Gatvė</label>
+                    {{ form.street }}
+                </div>
+                <div>
+                    <label for="{{ form.flat_number.id_for_label }}" class="block text-sm font-medium text-gray-700">Buto nr.</label>
+                    {{ form.flat_number }}
+                </div>
+                <div>
+                    <label for="{{ form.city.id_for_label }}" class="block text-sm font-medium text-gray-700">Miestas</label>
+                    {{ form.city }}
+                </div>
+                <div>
+                    <label for="{{ form.district.id_for_label }}" class="block text-sm font-medium text-gray-700">Rajonas</label>
+                    {{ form.district }}
+                </div>
+                <div>
+                    <label for="{{ form.rent_price.id_for_label }}" class="block text-sm font-medium text-gray-700">Nuomos kaina (€/mėn.)</label>
+                    {{ form.rent_price }}
+                </div>
+                <div>
+                    <label for="{{ form.property_type.id_for_label }}" class="block text-sm font-medium text-gray-700">Būsto tipas</label>
+                    {{ form.property_type }}
+                </div>
+                <div>
+                    <label for="{{ form.status.id_for_label }}" class="block text-sm font-medium text-gray-700">Būsena</label>
+                    {{ form.status }}
+                </div>
+            </div>
+        </div>
+
+        <div class="border-b pb-8">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">Parametrai</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                    <label for="{{ form.area.id_for_label }}" class="block text-sm font-medium text-gray-700">Plotas (m²)</label>
+                    {{ form.area }}
+                </div>
+                <div>
+                    <label for="{{ form.rooms.id_for_label }}" class="block text-sm font-medium text-gray-700">Kambarių sk.</label>
+                    {{ form.rooms }}
+                </div>
+                <div>
+                     <label for="{{ form.floor.id_for_label }}" class="block text-sm font-medium text-gray-700">Aukštas</label>
+                     {{ form.floor }}
+                </div>
+                <div>
+                     <label for="{{ form.total_floors.id_for_label }}" class="block text-sm font-medium text-gray-700">Aukštų sk.</label>
+                     {{ form.total_floors }}
+                </div>
+            </div>
+        </div>
+        
+        <div>
+            <label for="{{ form.description.id_for_label }}" class="block text-xl font-semibold text-gray-700 mb-4">Aprašymas</label>
+            {{ form.description }}
+        </div>
+
+        <div class="border-b pb-8">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">Ypatybės ir patogumai</h2>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {% for field in form %}
+                    {% if field.field.widget.input_type == 'checkbox' %}
+                    <label class="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                        {{ field }}
+                        <span class="text-sm font-medium text-gray-800">{{ field.label }}</span>
+                    </label>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+
+        <div>
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">Nuotraukos</h2>
+            <input type="file" name="images" id="id_images" multiple>
+        </div>
+        <div class="mt-8 pt-6 border-t">
+            <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 transition duration-300">
+                Pridėti objektą
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

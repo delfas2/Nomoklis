@@ -1,0 +1,62 @@
+<header class="flex-shrink-0 bg-white border-b">
+    <div class="flex items-center justify-between p-2">
+        <div class="flex items-center">
+            </div>
+
+        <div class="flex items-center space-x-3">
+            
+            <div x-data="{ open: false }" class="relative">
+                <button @click="open = !open" class="relative p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus:bg-gray-100 focus:text-gray-600 rounded-full">
+                    <span class="sr-only">View notifications</span>
+                    <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M15 17H20L18.5951 15.5951C18.2141 15.2141 18 14.6973 18 14.1585V11C18 8.38757 16.3304 6.16509 14 5.34142V5C14 3.89543 13.1046 3 12 3C10.8954 3 10 3.89543 10 5V5.34142C7.66962 6.16509 6 8.38757 6 11V14.1585C6 14.6973 5.78595 15.2141 5.40493 15.5951L4 17H9M15 17V18C15 19.6569 13.6569 21 12 21C10.3431 21 9 19.6569 9 18V17M15 17H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                    </svg>
+                </button>
+                <div x-show="open" @click.away="open = false" x-transition class="absolute right-0 w-80 mt-2 py-2 bg-white border rounded-md shadow-lg overflow-hidden z-20" style="display: none;">
+                    <div id="notifications-popup-content">
+                        {# Turinys bus įkeltas per JS #}
+                    </div>
+                </div>
+            </div>
+
+            <div x-data="{ open: false }" class="relative">
+                <button @click="open = !open" class="flex items-center space-x-2 relative focus:outline-none">
+                    <img class="h-9 w-9 rounded-full object-cover" src="{{ user.profile.profile_image.url }}" alt="Avatar">
+                    <span class="hidden md:inline-block font-medium text-gray-700">{{ user.get_full_name|default:user.username }}</span>
+                </button>
+
+                <div x-show="open" @click.away="open = false" x-transition class="absolute right-0 w-48 mt-2 py-2 bg-white border rounded-md shadow-xl z-20" style="display: none;">
+                    <a href="{% url 'profile_redirect' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-500 hover:text-white">
+                        Profilis
+                    </a>
+                    <a href="{% url 'account_logout' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-500 hover:text-white">
+                        Atsijungti
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const notificationsButton = document.querySelector('.relative.p-2');
+    const notificationsPopup = document.getElementById('notifications-popup-content');
+
+    if(notificationsButton) {
+        notificationsButton.addEventListener('click', async function() {
+            // Pirmiausia sugeneruojame URL adresą į kintamąjį
+            const allNotificationsUrl = "{% url 'notification_list' %}";
+            try {
+                const response = await fetch("{% url 'notifications_popup' %}");
+                const html = await response.text();
+                // Tada naudojame kintamąjį JavaScript'e
+                notificationsPopup.innerHTML = html + `<a href="${allNotificationsUrl}" class="block px-4 py-3 text-sm text-center font-medium text-blue-600 hover:bg-gray-100">Žiūrėti visus pranešimus</a>`;
+            } catch (error) {
+                notificationsPopup.innerHTML = '<p class="px-4 py-2 text-sm text-gray-500">Nepavyko užkrauti pranešimų.</p>';
+                console.error('Klaida kraunant pranešimus:', error);
+            }
+        });
+    }
+});
+</script>

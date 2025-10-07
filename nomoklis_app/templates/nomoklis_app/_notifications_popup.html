@@ -1,0 +1,20 @@
+<div class="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl border z-50">
+    <div class="p-4 border-b">
+        <h3 class="font-semibold text-gray-800">Naujausi pranešimai</h3>
+    </div>
+    <div class="divide-y max-h-96 overflow-y-auto">
+        {% for notification in notifications %}
+        <a href="{% url 'mark_notification_as_read' notification.id %}" class="block p-4 hover:bg-gray-50 {% if not notification.is_read %}bg-blue-50{% endif %}">
+            <p class="text-sm text-gray-700">{{ notification.message }}</p>
+            <p class="text-xs text-gray-400 mt-1">{{ notification.created_at|timesince }} ago</p>
+        </a>
+        {% empty %}
+        <p class="p-4 text-sm text-gray-500">Naujų pranešimų nėra.</p>
+        {% endfor %}
+    </div>
+    <div class="p-2 bg-gray-50 border-t">
+        <a href="{% url 'notification_list' %}" class="block text-center text-sm font-medium text-blue-600 hover:underline">
+            Žiūrėti visus pranešimus
+        </a>
+    </div>
+</div>

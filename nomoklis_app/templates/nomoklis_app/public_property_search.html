@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paieškos Rezultatai - NT Platforma</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .results-list::-webkit-scrollbar { width: 6px; }
+        .results-list::-webkit-scrollbar-track { background: #f1f1f1; }
+        .results-list::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 6px; }
+        .results-list::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+        .leaflet-popup-content-wrapper { border-radius: 0.5rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); }
+        .leaflet-popup-content { margin: 0; font-size: 14px; line-height: 1.4; width: 260px !important; }
+        .leaflet-popup-content-wrapper { padding: 0; }
+        .leaflet-popup-close-button { display: none; }
+        .leaflet-popup-tip-container { display: none; }
+        .popup-title { font-weight: 700; margin-bottom: 4px; }
+        [x-cloak] { display: none !important; }
+
+        /* --- Custom Map Marker Styles --- */
+        .marker {
+            width: 38px;
+            height: 38px;
+            border-radius: 50% 50% 50% 0;
+            position: absolute;
+            transform: rotate(-45deg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s ease;
+        }
+        .marker-icon {
+            transform: rotate(45deg);
+            color: white;
+            width: 20px;
+            height: 20px;
+            stroke-width: 2;
+            fill: none;
+            stroke: currentColor;
+        }
+        .marker-apartment { background-image: linear-gradient(135deg, #4F46E5 0%, #818CF8 100%); }
+        .marker-house { background-image: linear-gradient(135deg, #10B981 0%, #6EE7B7 100%); }
+        .marker-room { background-image: linear-gradient(135deg, #64748B 0%, #94A3B8 100%); }
+
+        /* --- Custom Popup Styles --- */
+        .marker-popup {
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .popup-image {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 6px;
+            background-color: #e2e8f0;
+        }
+        .popup-price {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #1e293b;
+        }
+        .popup-address {
+            font-size: 0.875rem;
+            color: #64748b;
+            margin-bottom: 4px;
+        }
+        .popup-details {
+            display: flex;
+            gap: 16px;
+            font-size: 0.875rem;
+            color: #475569;
+            padding-top: 8px;
+            border-top: 1px solid #f1f5f9;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+
+    <header class="bg-white shadow-sm sticky top-0 z-30">
+        <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <a href="/" class="text-2xl font-bold text-gray-800">NT Platforma</a>
+                <div class="hidden lg:flex flex-1 max-w-2xl mx-8">
+                    <form method="get" action="{% url 'property_search' %}" class="w-full flex items-center border border-gray-300 rounded-full shadow-sm bg-white">
+                        <input type="text" name="city" value="{{ request.GET.city|default:'' }}" class="w-1/3 px-5 py-2.5 bg-transparent rounded-l-full focus:outline-none" placeholder="Miestas">
+                        <span class="border-l h-6 border-gray-300"></span>
+                        <input type="number" name="min_price" value="{{ request.GET.min_price|default:'' }}" placeholder="Kaina nuo" class="w-1/4 px-4 py-2.5 bg-transparent focus:outline-none">
+                        <span class="border-l h-6 border-gray-300"></span>
+                        <input type="number" name="max_price" value="{{ request.GET.max_price|default:'' }}" placeholder="Kaina iki" class="w-1/4 px-4 py-2.5 bg-transparent focus:outline-none">
+                        <button type="submit" class="p-2 bg-blue-600 rounded-full m-1.5 hover:bg-blue-700 transition-colors">
+                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" /></svg>
+                        </button>
+                    </form>
+                </div>
+                <div class="flex items-center space-x-4">
+                    {% if user.is_authenticated %}<a href="{% url 'dashboard_redirect' %}" class="text-gray-600 font-semibold hover:text-blue-600 transition">Mano Paskyra</a><a href="{% url 'account_logout' %}" class="bg-blue-600 text-white font-semibold py-2 px-5 rounded-lg hover:bg-blue-700 transition duration-300">Atsijungti</a>{% else %}<a href="{% url 'account_login' %}" class="text-gray-600 font-semibold hover:text-blue-600 transition">Prisijungti</a><a href=" {% url 'account_signup' %} " class="bg-blue-600 text-white font-semibold py-2 px-5 rounded-lg hover:bg-blue-700 transition duration-300">Registruotis</a>{% endif %}
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="flex flex-col h-[calc(100vh-80px)]">
+        <div class="p-4 border-b flex-shrink-0 bg-white" x-data="{ openDropdown: null }">            <div class="flex items-center gap-2">
+                    
+                    <div class="relative">
+                        <button @click="openDropdown = (openDropdown === 'rooms' ? null : 'rooms')" class="px-4 py-2 border rounded-full text-sm font-medium hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400" :class="{ 'bg-blue-100 text-blue-800 border-blue-400': '{{ request.GET.min_rooms }}' || '{{ request.GET.max_rooms }}' }">
+                            Kambarių sk.
+                        </button>
+                        <div x-show="openDropdown === 'rooms'" @click.away="openDropdown = null" x-cloak class="absolute top-full mt-2 w-64 bg-white border rounded-lg shadow-xl z-20">
+                            <form method="get" action="{% url 'property_search' %}" class="p-4 space-y-4">
+                                {% for key, value in request.GET.items %}{% if key != 'min_rooms' and key != 'max_rooms' %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endif %}{% endfor %}
+                                <label class="text-sm font-semibold text-gray-700">Kambarių skaičius</label>
+                                <div class="flex items-center gap-2">
+                                    <input type="number" name="min_rooms" value="{{ request.GET.min_rooms|default:'' }}" placeholder="Nuo" class="w-full border-gray-300 rounded-md shadow-sm text-sm">
+                                    <input type="number" name="max_rooms" value="{{ request.GET.max_rooms|default:'' }}" placeholder="Iki" class="w-full border-gray-300 rounded-md shadow-sm text-sm">
+                                </div>
+                                <div class="flex justify-end gap-2 pt-2">
+                                    <button type="submit" class="px-4 py-1.5 bg-blue-600 text-white text-sm font-semibold rounded-md hover:bg-blue-700">Taikyti</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <div class="relative">
+                        <button @click="openDropdown = (openDropdown === 'area' ? null : 'area')" class="px-4 py-2 border rounded-full text-sm font-medium hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400" :class="{ 'bg-blue-100 text-blue-800 border-blue-400': '{{ request.GET.min_area }}' || '{{ request.GET.max_area }}' }">
+                            Plotas, m²
+                        </button>
+                        <div x-show="openDropdown === 'area'" @click.away="openDropdown = null" x-cloak class="absolute top-full mt-2 w-64 bg-white border rounded-lg shadow-xl z-20">
+                            <form method="get" action="{% url 'property_search' %}" class="p-4 space-y-4">
+                                {% for key, value in request.GET.items %}{% if key != 'min_area' and key != 'max_area' %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endif %}{% endfor %}
+                                <label class="text-sm font-semibold text-gray-700">Plotas, m²</label>
+                                <div class="flex items-center gap-2">
+                                    <input type="number" name="min_area" value="{{ request.GET.min_area|default:'' }}" placeholder="Nuo" class="w-full border-gray-300 rounded-md shadow-sm text-sm">
+                                    <input type="number" name="max_area" value="{{ request.GET.max_area|default:'' }}" placeholder="Iki" class="w-full border-gray-300 rounded-md shadow-sm text-sm">
+                                </div>
+                                <div class="flex justify-end gap-2 pt-2">
+                                    <button type="submit" class="px-4 py-1.5 bg-blue-600 text-white text-sm font-semibold rounded-md hover:bg-blue-700">Taikyti</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="relative">
+                         <button @click="openDropdown = (openDropdown === 'floor' ? null : 'floor')" class="px-4 py-2 border rounded-full text-sm font-medium hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-400" :class="{ 'bg-blue-100 text-blue-800 border-blue-400': '{{ request.GET.min_floor }}' || '{{ request.GET.max_floor }}' }">
+                            Aukštas
+                        </button>
+                        <div x-show="openDropdown === 'floor'" @click.away="openDropdown = null" x-cloak class="absolute top-full mt-2 w-64 bg-white border rounded-lg shadow-xl z-20">
+                            <form method="get" action="{% url 'property_search' %}" class="p-4 space-y-4">
+                                {% for key, value in request.GET.items %}{% if key != 'min_floor' and key != 'max_floor' %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endif %}{% endfor %}
+                                <label class="text-sm font-semibold text-gray-700">Aukštas</label>
+                                <div class="flex items-center gap-2">
+                                    <input type="number" name="min_floor" value="{{ request.GET.min_floor|default:'' }}" placeholder="Nuo" class="w-full border-gray-300 rounded-md shadow-sm text-sm">
+                                    <input type="number" name="max_floor" value="{{ request.GET.max_floor|default:'' }}" placeholder="Iki" class="w-full border-gray-300 rounded-md shadow-sm text-sm">
+                                </div>
+                                <div class="flex justify-end gap-2 pt-2">
+                                    <button type="submit" class="px-4 py-1.5 bg-blue-600 text-white text-sm font-semibold rounded-md hover:bg-blue-700">Taikyti</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="relative">
+                        <button @click="openDropdown = (openDropdown === 'more' ? null : 'more')" class="px-4 py-2 border rounded-full text-sm font-medium hover:bg-gray-100 font-bold focus:outline-none focus:ring-2 focus:ring-blue-400" :class="{ 'bg-blue-100 text-blue-800 border-blue-400': '{{ request.GET.has_balcony }}' || '{{ request.GET.has_parking }}' || '{{ request.GET.pets_allowed }}' || '{{ request.GET.is_furnished }}' || '{{ request.GET.has_appliances }}' }">
+                            Daugiau filtrų <!-- PATAISYMAS: Atnaujintas mygtuko aktyvumo tikrinimas -->
+                        </button>
+                        <div x-show="openDropdown === 'more'" @click.away="openDropdown = null" x-cloak class="absolute top-full mt-2 w-72 bg-white border rounded-lg shadow-xl z-20">
+                            <form method="get" action="{% url 'property_search' %}" class="p-4 space-y-4">
+                                {% for key, value in request.GET.items %}{% if key not in 'has_balcony,has_parking,pets_allowed,is_furnished,has_appliances,residence_declaration_allowed' %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endif %}{% endfor %}
+                                <label class="text-sm font-semibold text-gray-700">Patogumai</label>
+                                <div class="grid grid-cols-2 gap-x-4 gap-y-2 mt-2">
+                                    <label class="flex items-center"><input type="checkbox" name="has_balcony" {% if request.GET.has_balcony %}checked{% endif %} class="h-4 w-4 rounded border-gray-300 text-blue-600"><span class="ml-2 text-sm text-gray-600">Balkonas</span></label>
+                                    <label class="flex items-center"><input type="checkbox" name="has_parking" {% if request.GET.has_parking %}checked{% endif %} class="h-4 w-4 rounded border-gray-300 text-blue-600"><span class="ml-2 text-sm text-gray-600">Parkavimas</span></label>
+                                    <label class="flex items-center"><input type="checkbox" name="pets_allowed" {% if request.GET.pets_allowed %}checked{% endif %} class="h-4 w-4 rounded border-gray-300 text-blue-600"><span class="ml-2 text-sm text-gray-600">Leidžiami gyvūnai</span></label>
+                                    <label class="flex items-center"><input type="checkbox" name="is_furnished" {% if request.GET.is_furnished %}checked{% endif %} class="h-4 w-4 rounded border-gray-300 text-blue-600"><span class="ml-2 text-sm text-gray-600">Su baldais</span></label>
+                                    <label class="flex items-center"><input type="checkbox" name="has_appliances" {% if request.GET.has_appliances %}checked{% endif %} class="h-4 w-4 rounded border-gray-300 text-blue-600"><span class="ml-2 text-sm text-gray-600">Su buitine technika</span></label>
+                                </div>
+                                <label class="flex items-center pt-2"><input type="checkbox" name="residence_declaration_allowed" {% if request.GET.residence_declaration_allowed %}checked{% endif %} class="h-4 w-4 rounded border-gray-300 text-blue-600"><span class="ml-2 text-sm text-gray-600">Leidžiama deklaruoti gyv. vietą</span></label>
+                                <div class="flex justify-end gap-2 pt-2">
+                                    <button type="submit" class="px-4 py-1.5 bg-blue-600 text-white text-sm font-semibold rounded-md hover:bg-blue-700">Taikyti</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    <a href="{% url 'property_search' %}" class="ml-auto text-sm text-gray-500 hover:text-blue-600 hover:underline self-center pr-2">Išvalyti viską</a>
+                </div>
+        </div>
+        <div class="flex-grow flex overflow-hidden">
+            <div class="w-full lg:w-1/2 xl:w-2/5 flex flex-col bg-white">
+                <div class="flex-grow overflow-y-auto results-list p-4">
+                    <div class="mb-4 px-2">
+                        <h2 class="text-xl font-bold text-gray-800">Rasta {{ properties.count }} nuomos pasiūlymų</h2>
+                </div>
+                <div id="property-list-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-4">
+                    {% for property in properties %}
+                    <div x-data="{ isSaved: {% if property.id in saved_property_ids %}true{% else %}false{% endif %} }" id="property-card-{{ property.id }}" data-lat="{{ property.latitude }}" data-lon="{{ property.longitude }}" class="bg-white rounded-lg border border-gray-200 hover:border-blue-500 overflow-hidden group transition-all duration-300 cursor-pointer">
+                        <div class="flex relative">
+                            {% if user.is_authenticated and user.profile.user_type == 'nuomininkas' %}
+                            <button @click.prevent="fetch('{% url 'toggle_save_property' property.id %}', { method: 'POST', headers: {'X-CSRFToken': '{{ csrf_token }}'} }).then(response => response.json()).then(data => isSaved = data.is_saved)" class="absolute top-3 right-3 z-10 p-2 bg-white/70 rounded-full backdrop-blur-sm hover:bg-white transition">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" :class="isSaved ? 'fill-red-500 text-red-500' : 'fill-none'" /></svg>
+                            </button>
+                            {% endif %}
+                            <img class="w-1/3 h-40 object-cover" src="{% if property.images.first %}{{ property.images.first.image.url }}{% else %}https://placehold.co/400x300/d1d5db/333333?text=Nėra+nuotraukos{% endif %}" alt="{{ property.street }}">
+                            <div class="p-4 flex-1">
+                                <p class="font-bold text-lg text-gray-800">{{ property.rent_price|floatformat:"0" }} €/mėn.</p>
+                                <p class="text-md text-gray-700 mt-1 font-semibold truncate">{{ property.street }}, {{ property.city }}</p>
+                                <p class="text-sm text-gray-500 mt-2">{{ property.rooms }} kamb. &bull; {{ property.area|floatformat:"0" }} m² &bull; {{ property.floor }}/{{ property.total_floors }} aukštas</p>
+                                <button data-url="{% url 'property_detail_view' property.id %}" class="show-details-btn mt-2 text-sm font-semibold text-blue-600 hover:underline">Daugiau informacijos</button>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-gray-600 col-span-full text-center py-10">Pagal jūsų paieškos kriterijus, laisvų NT objektų nerasta.</p>
+                    {% endfor %}
+                </div>
+            </div>
+            </div>
+            <div class="hidden lg:block w-1/2 xl:w-3/5 relative"><div id="map" class="absolute inset-0 z-10"></div></div>
+        </div>
+    </div>
+
+    <div id="modal-backdrop-details" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden z-50">
+        <div id="modal-content-details" class="relative"></div>
+    </div>
+
+    <div id="modal-backdrop-generic" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 hidden z-[60]">
+        <div id="modal-content-generic" class="relative"></div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // --- PATAISYMAS: Išsaugome nuorodas į visus modalinius langus ---
+        const detailsBackdrop = document.getElementById('modal-backdrop-details');
+        const detailsContent = document.getElementById('modal-content-details');
+        const genericBackdrop = document.getElementById('modal-backdrop-generic');
+        const genericContent = document.getElementById('modal-content-generic');
+
+        // --- PATAISYMAS: Išplečiame paspaudimų apdorojimą ---
+        document.body.addEventListener('click', async function(event) {
+            // Ieškome paspaustų mygtukų. Naudojame .closest(), kad veiktų net jei paspaudėme ant ikonos mygtuko viduje
+            const detailsBtn = event.target.closest('.show-details-btn');
+            const requestBtn = event.target.closest('.show-request-btn');
+            const reviewsBtn = event.target.closest('.show-reviews-btn');
+    
+            // Rodyti detalios informacijos langą
+            if (detailsBtn) {
+                event.preventDefault(); // Svarbu, kad nenukreiptų į nuorodą, jei mygtukas yra <a>
+                try {
+                    const response = await fetch(detailsBtn.dataset.url);
+                    detailsContent.innerHTML = await response.text();
+                    detailsBackdrop.classList.remove('hidden');
+                } catch (error) { console.error("Nepavyko užkrauti detalios informacijos:", error); }
+            }
+    
+            // Rodyti užklausos arba atsiliepimų langą (naudojame bendrinį modalą)
+            else if (requestBtn || reviewsBtn) {
+                event.preventDefault();
+                const btn = requestBtn || reviewsBtn; // Nustatome, kuris mygtukas buvo paspaustas
+                try {
+                    const response = await fetch(btn.dataset.url);
+                    genericContent.innerHTML = await response.text();
+                    genericBackdrop.classList.remove('hidden');
+                } catch (error) { console.error("Nepavyko užkrauti antrinio turinio:", error); }
+            }
+
+            // Uždaryti detalios informacijos langą
+            // Tikriname ar paspausta ant fono, ar ant uždarymo mygtuko
+            if (event.target === detailsBackdrop || event.target.closest('.close-modal-btn')) {
+                detailsBackdrop.classList.add('hidden');
+                detailsContent.innerHTML = ''; // Išvalome turinį
+            }
+
+            // Uždaryti bendrinį (užklausų/atsiliepimų) langą
+            if (event.target === genericBackdrop || event.target.closest('.close-reviews-btn') || event.target.closest('.cancel-request-btn')) {
+                genericBackdrop.classList.add('hidden');
+                genericContent.innerHTML = ''; // Išvalome turinį
+            }
+        });
+
+        const map = L.map('map').setView([54.6872, 25.2797], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        const markers = L.layerGroup().addTo(map);
+        const markerObjects = {};
+        fetch("{% url 'property_locations_api' %}")
+            .then(response => response.json())
+            .then(data => {
+                data.forEach(prop => {
+                    const propId = prop.popup_url.match(/(\d+)\/?$/)[1];
+                    
+                    let markerClass = 'marker-apartment'; // Default
+                    if (prop.property_type === 'Namas') markerClass = 'marker-house';
+                    else if (prop.property_type === 'Kambarys bute') markerClass = 'marker-room';
+
+                    const iconHtml = `
+                        <div class="marker ${markerClass}">
+                            <svg viewBox="0 0 24 24" class="marker-icon">
+                                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                            </svg>
+                        </div>`;
+
+                    const customIcon = L.divIcon({
+                        html: iconHtml,
+                        className: '', // remove default leaflet-div-icon
+                        iconSize: [38, 38],
+                        iconAnchor: [19, 38] // point of the icon which will correspond to marker's location
+                    });
+
+                    if (prop.lat && prop.lon) {
+                        const marker = L.marker([prop.lat, prop.lon], { icon: customIcon });
+                        
+                        const imageUrl = prop.image_url || 'https://placehold.co/400x300/d1d5db/333333?text=Nėra+nuotraukos';
+                        
+                        const popupContent = `
+                            <div class="marker-popup">
+                                <img src="${imageUrl}" alt="Būsto nuotrauka" class="popup-image">
+                                <div class="popup-price">${prop.price}</div>
+                                <div class="popup-address">${prop.title}</div>
+                                <div class="popup-details">
+                                    <span>${prop.rooms} kamb.</span>
+                                    <span>${prop.area} m²</span>
+                                </div>
+                                <button data-url="${prop.popup_url}" class="show-details-btn mt-1 text-sm font-semibold text-blue-600 hover:underline text-left">Daugiau informacijos</button>
+                            </div>`;
+
+                        marker.bindPopup(popupContent);
+                        markers.addLayer(marker);
+                        markerObjects[propId] = marker;
+                    }
+                });
+            })
+            .catch(error => console.error('Klaida gaunant objektų lokacijas:', error));
+            
+        const propertyCards = document.querySelectorAll('[id^="property-card-"]');
+        let activeCard = null;
+
+        propertyCards.forEach(card => {
+            const propId = card.id.split('-')[2];
+            card.addEventListener('click', (event) => {
+                if (event.target.closest('button')) {
+                    return;
+                }
+
+                if (activeCard) {
+                    activeCard.classList.remove('ring-2', 'ring-blue-500', 'shadow-lg');
+                }
+
+                activeCard = card;
+                activeCard.classList.add('ring-2', 'ring-blue-500', 'shadow-lg');
+                
+                if (markerObjects[propId]) {
+                    map.flyTo([card.dataset.lat, card.dataset.lon], 15);
+                    markerObjects[propId].openPopup();
+                }
+            });
+        });
+    });
+    </script>
+</body>
+</html>

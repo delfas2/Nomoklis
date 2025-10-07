@@ -1,0 +1,102 @@
+{% extends "nomoklis_app/_public_base.html" %}
+{% load static %}
+
+{% block title %}Privalumai Nuomotojams{% endblock %}
+
+{% block content %}
+<div class="bg-white">
+    <!-- Hero sekcija -->
+    <section class="relative bg-gray-900 text-white">
+        <img src="https://images.unsplash.com/photo-1582407947304-fd86f028f716?q=80&w=1992&auto=format&fit=crop" alt="Prabangus namas" class="absolute inset-0 w-full h-full object-cover opacity-50">
+        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 md:py-32 text-center">
+            <h1 class="text-4xl md:text-6xl font-extrabold tracking-tight">Valdykite nuomą be vargo</h1>
+            <p class="mt-4 max-w-2xl mx-auto text-lg md:text-xl text-gray-200">Visi įrankiai, kurių reikia sėkmingam NT valdymui – nuo skelbimo iki stabilių pajamų.</p>
+            <div class="mt-8">
+                <a href="{% url 'account_signup' %}" class="bg-blue-600 text-white font-semibold py-3 px-8 rounded-lg hover:bg-blue-700 transition duration-300 text-lg">Pradėti dabar</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Kaip tai veikia? -->
+    <section class="py-20 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                 <h2 class="text-3xl md:text-4xl font-bold text-gray-800">Trys paprasti žingsniai</h2>
+                 <p class="mt-2 max-w-xl mx-auto text-lg text-gray-600">Pradėkite vos per kelias minutes.</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
+                <div class="text-center">
+                    <div class="flex items-center justify-center h-16 w-16 rounded-full bg-blue-100 text-blue-600 mx-auto mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L14.732 3.732z" /></svg>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">1. Sukurkite skelbimą</h3>
+                    <p class="text-gray-600">Įkelkite kokybiškas nuotraukas, pridėkite detalų aprašymą ir nustatykite kainą. Mūsų patogi forma padės nieko nepamiršti.</p>
+                </div>
+                <div class="text-center">
+                    <div class="flex items-center justify-center h-16 w-16 rounded-full bg-blue-100 text-blue-600 mx-auto mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">2. Gaukite užklausas</h3>
+                    <p class="text-gray-600">Bendraukite su potencialiais nuomininkais per saugią vidinę sistemą, atsakykite į klausimus ir susitarkite dėl apžiūros.</p>
+                </div>
+                <div class="text-center">
+                     <div class="flex items-center justify-center h-16 w-16 rounded-full bg-blue-100 text-blue-600 mx-auto mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">3. Valdykite nuomą</h3>
+                    <p class="text-gray-600">Naudokitės sutarčių šablonais, generuokite sąskaitas ir priimkite mokėjimus. Viskas vienoje vietoje.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Funkcijos -->
+    <section class="py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl md:text-4xl font-bold text-gray-800">Galingi įrankiai jūsų verslui</h2>
+                <p class="mt-2 max-w-xl mx-auto text-lg text-gray-600">Supaprastinkite savo kasdienybę su mūsų platformos funkcijomis.</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div class="bg-gray-50 p-6 rounded-lg">
+                    <h4 class="font-semibold text-lg text-gray-800">Sutarčių generavimas</h4>
+                    <p class="text-gray-600 mt-1">Naudokitės paruoštais, teisiškai patikrintais sutarčių šablonais arba redaguokite juos pagal savo poreikius.</p>
+                </div>
+                <div class="bg-gray-50 p-6 rounded-lg">
+                    <h4 class="font-semibold text-lg text-gray-800">Automatizuotos sąskaitos</h4>
+                    <p class="text-gray-600 mt-1">Kelis mygtukų paspaudimais generuokite mėnesines sąskaitas nuomininkams, įtraukdami nuomą ir komunalinius mokesčius.</p>
+                </div>
+                <div class="bg-gray-50 p-6 rounded-lg">
+                    <h4 class="font-semibold text-lg text-gray-800">Saugūs mokėjimai</h4>
+                    <p class="text-gray-600 mt-1">Priimkite mokėjimus tiesiai į savo banko sąskaitą per patikimą „Stripe“ sistemą. <span class="text-sm text-blue-600 font-medium">(Netrukus)</span></p>
+                </div>
+                <div class="bg-gray-50 p-6 rounded-lg">
+                    <h4 class="font-semibold text-lg text-gray-800">Problemų registravimas</h4>
+                    <p class="text-gray-600 mt-1">Centralizuotai valdykite nuomininkų pranešimus apie gedimus ir sekite jų sprendimo eigą.</p>
+                </div>
+                <div class="bg-gray-50 p-6 rounded-lg">
+                    <h4 class="font-semibold text-lg text-gray-800">Statistika ir analizė</h4>
+                    <p class="text-gray-600 mt-1">Stebėkite savo pajamų srautus, užimtumą ir kitus svarbius rodiklius patogioje statistikos panelėje.</p>
+                </div>
+                <div class="bg-gray-50 p-6 rounded-lg">
+                    <h4 class="font-semibold text-lg text-gray-800">Tiesioginis bendravimas</h4>
+                    <p class="text-gray-600 mt-1">Bendraukite su nuomininkais per integruotą pokalbių sistemą, išsaugodami visą komunikacijos istoriją.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Kvietimas veikti -->
+    <section class="bg-blue-700">
+        <div class="max-w-4xl mx-auto text-center py-16 px-4 sm:py-20 sm:px-6 lg:px-8">
+            <h2 class="text-3xl font-extrabold text-white sm:text-4xl">
+                <span class="block">Pasiruošę pradėti?</span>
+            </h2>
+            <p class="mt-4 text-lg leading-6 text-blue-200">Sukurkite savo pirmąjį skelbimą šiandien ir atraskite patogesnį nuomos valdymą.</p>
+            <a href="{% url 'add_property' %}" class="mt-8 w-full inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-blue-600 bg-white hover:bg-blue-50 sm:w-auto">
+                Pridėti NT objektą
+            </a>
+        </div>
+    </section>
+</div>
+{% endblock %}

@@ -1,0 +1,82 @@
+{% extends "nomoklis_app/_public_base.html" %}
+{% load static %}
+
+{% block title %}Privalumai Nuomininkams{% endblock %}
+
+{% block content %}
+<div class="bg-white">
+    <!-- Hero sekcija -->
+    <section class="relative bg-gray-900 text-white">
+        <img src="https://images.unsplash.com/photo-1494526585095-c41746248156?q=80&w=2070&auto=format&fit=crop" alt="Jaukus buto interjeras" class="absolute inset-0 w-full h-full object-cover opacity-50">
+        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 md:py-32 text-center">
+            <h1 class="text-4xl md:text-6xl font-extrabold tracking-tight">Raskite namus, kuriuos pamilsite</h1>
+            <p class="mt-4 max-w-2xl mx-auto text-lg md:text-xl text-gray-200">Ieškokite, bendraukite ir nuomokitės patogiai ir saugiai.</p>
+            <div class="mt-8">
+                <a href="{% url 'property_search' %}" class="bg-blue-600 text-white font-semibold py-3 px-8 rounded-lg hover:bg-blue-700 transition duration-300 text-lg">Pradėti paiešką</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Kaip tai veikia? -->
+    <section class="py-20 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                 <h2 class="text-3xl md:text-4xl font-bold text-gray-800">Jūsų kelias į naujus namus</h2>
+                 <p class="mt-2 max-w-xl mx-auto text-lg text-gray-600">Paprastas ir skaidrus procesas.</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
+                <div class="text-center">
+                    <div class="flex items-center justify-center h-16 w-16 rounded-full bg-blue-100 text-blue-600 mx-auto mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">1. Ieškokite</h3>
+                    <p class="text-gray-600">Naudokitės išplėstine paieška ir filtrais, kad rastumėte būstą, atitinkantį visus jūsų lūkesčius.</p>
+                </div>
+                <div class="text-center">
+                    <div class="flex items-center justify-center h-16 w-16 rounded-full bg-blue-100 text-blue-600 mx-auto mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a2 2 0 01-2-2V7a2 2 0 012-2h4a2 2 0 002-2z" /></svg>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">2. Bendraukite</h3>
+                    <p class="text-gray-600">Saugiai susisiekite su nuomotojais, užduokite klausimus ir gaukite visą reikiamą informaciją.</p>
+                </div>
+                <div class="text-center">
+                     <div class="flex items-center justify-center h-16 w-16 rounded-full bg-blue-100 text-blue-600 mx-auto mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">3. Sudarykite sutartį</h3>
+                    <p class="text-gray-600">Pateikite nuomos užklausą, peržiūrėkite sutarties sąlygas ir patvirtinkite sandorį skaitmeniniu būdu.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Funkcijos -->
+    <section class="py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="lg:text-center mb-12">
+                <h2 class="text-3xl md:text-4xl font-bold text-gray-800">Sukurta jūsų patogumui</h2>
+            </div>
+            <div class="mt-10">
+                <dl class="space-y-10 md:space-y-0 md:grid md:grid-cols-2 md:gap-x-8 md:gap-y-10">
+                    <div class="relative">
+                        <dt><p class="ml-16 text-lg leading-6 font-medium text-gray-900">Išsami paieška</p></dt>
+                        <dd class="mt-2 ml-16 text-base text-gray-500">Filtruokite skelbimus pagal kainą, vietą, kambarių skaičių, plotą ir daugybę kitų patogumų.</dd>
+                    </div>
+                    <div class="relative">
+                        <dt><p class="ml-16 text-lg leading-6 font-medium text-gray-900">Išsaugoti skelbimai</p></dt>
+                        <dd class="mt-2 ml-16 text-base text-gray-500">Išsisaugokite patikusius skelbimus ir grįžkite prie jų vėliau. Niekada neprarasite gero varianto.</dd>
+                    </div>
+                    <div class="relative">
+                        <dt><p class="ml-16 text-lg leading-6 font-medium text-gray-900">Patikimi atsiliepimai</p></dt>
+                        <dd class="mt-2 ml-16 text-base text-gray-500">Peržiūrėkite buvusių nuomininkų atsiliepimus apie būstą ir nuomotoją. Priimkite sprendimą pasitikėdami.</dd>
+                    </div>
+                    <div class="relative">
+                        <dt><p class="ml-16 text-lg leading-6 font-medium text-gray-900">Skaidrus procesas</p></dt>
+                        <dd class="mt-2 ml-16 text-base text-gray-500">Visos sutarties sąlygos, mokėjimų istorija ir bendravimas su nuomotoju – vienoje vietoje.</dd>
+                    </div>
+                </dl>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}

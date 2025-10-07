@@ -1,0 +1,90 @@
+{% extends "nomoklis_app/_public_base.html" %}
+{% load i18n %}
+
+{% block title %}Taisyklės ir Sąlygos{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+    <div class="bg-white p-8 rounded-lg shadow-md">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6">Svetainės Taisyklės ir Sąlygos</h1>
+ 
+        <div class="text-gray-700 space-y-4">
+            <p>Paskutinį kartą atnaujinta: {% now "Y-m-d" %}</p>
+ 
+            <p>Sveiki atvykę į Nomoklis.lt! Prieš pradedant naudotis mūsų paslaugomis, prašome atidžiai perskaityti šias taisykles ir sąlygas.</p>
+ 
+            <h2 class="text-2xl font-bold text-gray-800 pt-4">1. Bendrosios nuostatos</h2>
+            <p>1.1. Šios taisyklės ir sąlygos (toliau – Taisyklės) yra teisiškai privalomas dokumentas, kuris nustato jūsų (toliau – Vartotojas) teises, pareigas ir atsakomybę naudojantis interneto svetaine Nomoklis.lt (toliau – Svetainė), kurią administruoja [Jūsų įmonės pavadinimas] (toliau – Paslaugų teikėjas).</p>
+            <p>1.2. Naudodamiesi Svetaine bet kokiu būdu ir forma, jūs besąlygiškai sutinkate su visomis šiomis Taisyklėmis. Jei nesutinkate su Taisyklėmis, jūs neturite teisės naudotis Svetainės paslaugomis.</p>
+            <p>1.3. Sąvokos: <strong>Nuomotojas</strong> – Vartotojas, kuris siūlo nuomoti nekilnojamąjį turtą. <strong>Nuomininkas</strong> – Vartotojas, kuris ieško arba nuomojasi nekilnojamąjį turtą. <strong>Skelbimas</strong> – Nuomotojo pateikta informacija apie nuomojamą objektą.</p>
+ 
+            <h2 class="text-2xl font-bold text-gray-800 pt-4">2. Paslaugos</h2>
+            <p>2.1. Svetainė teikia platformą, kurioje Nuomotojai gali skelbti nekilnojamojo turto nuomos Skelbimus, o Nuomininkai – ieškoti nuomojamo turto.</p>
+            <p>2.2. Svetainė suteikia įrankius, skirtus palengvinti bendravimą tarp Nuomotojų ir Nuomininkų, nuomos sutarčių sudarymą, sąskaitų generavimą ir mokėjimų administravimą per trečiųjų šalių mokėjimo paslaugų teikėjus (pvz., Stripe).</p>
+            <p>2.3. Paslaugų teikėjas nėra nekilnojamojo turto agentūra, brokeris, nuomotojas ar draudikas. Paslaugų teikėjas nedalyvauja sandoriuose tarp Vartotojų ir nekontroliuoja jų elgesio.</p>
+ 
+            <h2 class="text-2xl font-bold text-gray-800 pt-4">3. Registracija ir Paskyra</h2>
+            <p>3.1. Norint naudotis visomis Svetainės funkcijomis, būtina užsiregistruoti ir susikurti asmeninę paskyrą.</p>
+            <p>3.2. Registracijos metu Vartotojas privalo pateikti teisingą, tikslią ir išsamią informaciją. Vartotojas yra atsakingas už pateiktų duomenų teisingumą ir jų atnaujinimą.</p>
+            <p>3.3. Vartotojas yra atsakingas už savo prisijungimo duomenų (slaptažodžio) konfidencialumą ir už visus veiksmus, atliktus jo paskyroje.</p>
+ 
+            <h2 class="text-2xl font-bold text-gray-800 pt-4">4. Vartotojų teisės ir pareigos</h2>
+            <ul class="space-y-4">
+                <li><strong>4.1. Bendrosios pareigos:</strong>
+                    <ul class="list-disc list-inside pl-4 space-y-2">
+                        <li>Naudotis Svetaine laikantis galiojančių teisės aktų ir šių Taisyklių.</li>
+                        <li>Neskelti melagingos, klaidinančios, įžeidžiančios, diskriminuojančios ar neteisėtos informacijos.</li>
+                        <li>Nenaudoti Svetainės nelegaliai veiklai, sukčiavimui, „spam“ siuntimui ar kenkėjiškos programinės įrangos platinimui.</li>
+                        <li>Gerbti kitų Vartotojų privatumą ir intelektinės nuosavybės teises.</li>
+                    </ul>
+                </li>
+                <li><strong>4.2. Nuomotojo pareigos:</strong>
+                    <ul class="list-disc list-inside pl-4 space-y-2">
+                        <li>Užtikrinti, kad Skelbimuose pateikta informacija (nuotraukos, aprašymas, kaina, sąlygos) yra tiksli ir neklaidinanti.</li>
+                        <li>Turėti teisę nuomoti Skelbime nurodytą turtą.</li>
+                        <li>Laikytis su Nuomininku sudarytos nuomos sutarties sąlygų.</li>
+                    </ul>
+                </li>
+                <li><strong>4.3. Nuomininko pareigos:</strong>
+                    <ul class="list-disc list-inside pl-4 space-y-2">
+                        <li>Laiku mokėti nuomos ir kitus sutartyje numatytus mokesčius.</li>
+                        <li>Naudoti nuomojamą turtą pagal paskirtį ir tausoti jį.</li>
+                        <li>Laikytis nuomos sutarties sąlygų.</li>
+                    </ul>
+                </li>
+            </ul>
+ 
+            <h2 class="text-2xl font-bold text-gray-800 pt-4">5. Mokėjimai</h2>
+            <p>5.1. Svetainė gali taikyti mokesčius už tam tikras paslaugas (pvz., skelbimo aktyvavimą). Visi taikomi mokesčiai yra aiškiai nurodomi prieš Vartotojui patvirtinant mokėjimą.</p>
+            <p>5.2. Mokėjimai už nuomą ir kitas paslaugas tarp Vartotojų yra vykdomi per trečiųjų šalių mokėjimo sistemas. Paslaugų teikėjas nėra atsakingas už šių sistemų veikimą, saugumą ar galimus sutrikimus.</p>
+            <p>5.3. Vartotojas yra atsakingas už visus mokesčius, susijusius su jo veikla Svetainėje.</p>
+ 
+            <h2 class="text-2xl font-bold text-gray-800 pt-4">6. Atsakomybės apribojimas</h2>
+            <p>6.1. Paslaugų teikėjas veikia tik kaip platformos administratorius ir neatsako už Vartotojų skelbiamos informacijos turinį, tikslumą, teisėtumą ar Vartotojų tarpusavio įsipareigojimų vykdymą.</p>
+            <p>6.2. Visi sandoriai ir sutartys tarp Nuomotojų ir Nuomininkų yra sudaromi tiesiogiai tarp šalių. Paslaugų teikėjas nėra šių sandorių šalis ir neprisiima jokios atsakomybės už jų vykdymą.</p>
+            <p>6.3. Paslaugų teikėjas negarantuoja nepertraukiamo ir neklaidingo Svetainės veikimo ir neatsako už jokius nuostolius, patirtus dėl Svetainės veiklos sutrikimų.</p>
+ 
+            <h2 class="text-2xl font-bold text-gray-800 pt-4">7. Intelektinė nuosavybė</h2>
+            <p>7.1. Visas Svetainės turinys, įskaitant tekstus, dizainą, logotipus, grafinius elementus ir programinę įrangą, yra Paslaugų teikėjo intelektinė nuosavybė, saugoma autorių teisių ir kitų teisės aktų.</p>
+            <p>7.2. Įkeldami turinį (pvz., nuotraukas, aprašymus) į Svetainę, Vartotojai suteikia Paslaugų teikėjui neišimtinę, neatlygintiną, visame pasaulyje galiojančią licenciją naudoti, atgaminti, platinti ir viešai rodyti šį turinį Svetainės paslaugų teikimo tikslais.</p>
+ 
+            <h2 class="text-2xl font-bold text-gray-800 pt-4">8. Privatumo politika</h2>
+            <p>Jūsų asmens duomenų tvarkymą reglamentuoja mūsų <a href="{% url 'privacy_policy' %}" class="text-blue-600 hover:underline">Privatumo politika</a>, kuri yra neatsiejama šių Taisyklių dalis. Naudodamiesi Svetaine, jūs sutinkate su duomenų rinkimu ir naudojimu, kaip aprašyta Privatumo politikoje.</p>
+ 
+            <h2 class="text-2xl font-bold text-gray-800 pt-4">9. Taisyklių keitimas</h2>
+            <p>Paslaugų teikėjas pasilieka teisę bet kada vienašališkai keisti šias Taisykles. Apie esminius pakeitimus Vartotojai bus informuojami Svetainėje arba el. paštu. Tolesnis naudojimasis Svetaine po pakeitimų įsigaliojimo reiškia jūsų sutikimą su atnaujintomis Taisyklėmis.</p>
+ 
+            <h2 class="text-2xl font-bold text-gray-800 pt-4">10. Baigiamosios nuostatos</h2>
+            <p>10.1. Visi ginčai, kylantys iš šių Taisyklių, sprendžiami derybų keliu. Nepavykus susitarti, ginčai sprendžiami Lietuvos Respublikos įstatymų nustatyta tvarka.</p>
+            <p>10.2. Jei turite klausimų dėl šių Taisyklių, susisiekite su mumis el. paštu info@nomoklis.lt.</p>
+        </div>
+ 
+        <div class="mt-8 text-center">
+            <a href="{{ request.META.HTTP_REFERER|default:'/' }}" class="bg-blue-600 text-white font-semibold py-2 px-5 rounded-lg hover:bg-blue-700 transition duration-300">
+                Grįžti atgal
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

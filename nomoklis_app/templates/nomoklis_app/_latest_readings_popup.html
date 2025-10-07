@@ -1,0 +1,45 @@
+<div class="p-6">
+    <div class="flex justify-between items-start">
+        <h2 class="text-xl font-bold text-gray-800">Paskutiniai rodmenys</h2>
+        <button id="cancel-popup" class="text-gray-400 hover:text-gray-600">&times;</button>
+    </div>
+    <p class="text-sm text-gray-500 mb-4">Pateikta: {{ reading.reading_date|date:"Y-m-d" }}</p>
+    <hr class="my-4">
+    
+    {% if reading %}
+    <div class="space-y-3 text-sm">
+        {% if reading.electricity_reading is not None %}
+        <div class="flex justify-between">
+            <span class="text-gray-600">Elektra:</span>
+            <span class="font-semibold text-gray-800">{{ reading.electricity_reading }}</span>
+        </div>
+        {% endif %}
+        {% if reading.hot_water_reading is not None %}
+        <div class="flex justify-between">
+            <span class="text-gray-600">Karštas vanduo:</span>
+            <span class="font-semibold text-gray-800">{{ reading.hot_water_reading }}</span>
+        </div>
+        {% endif %}
+        {% if reading.cold_water_reading is not None %}
+        <div class="flex justify-between">
+            <span class="text-gray-600">Šaltas vanduo:</span>
+            <span class="font-semibold text-gray-800">{{ reading.cold_water_reading }}</span>
+        </div>
+        {% endif %}
+        {% if reading.gas_reading is not None %}
+        <div class="flex justify-between">
+            <span class="text-gray-600">Dujos:</span>
+            <span class="font-semibold text-gray-800">{{ reading.gas_reading }}</span>
+        </div>
+        {% endif %}
+        {% if reading.notes %}
+        <div class="pt-2">
+            <p class="text-gray-600 font-medium">Pastabos:</p>
+            <p class="text-gray-800 mt-1">{{ reading.notes }}</p>
+        </div>
+        {% endif %}
+    </div>
+    {% else %}
+    <p class="text-center text-gray-500 py-4">Rodmenys dar nebuvo pateikti.</p>
+    {% endif %}
+</div>

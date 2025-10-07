@@ -1,0 +1,220 @@
+{% extends "nomoklis_app/_landlord_base.html" %}
+
+{% block title %}Sutartys{% endblock %}
+
+{% block content %}
+<div class="px-4 sm:px-6 lg:px-8 py-8">
+    <div class="sm:flex sm:items-center">
+        <div class="sm:flex-auto">
+            <h1 class="text-2xl font-semibold text-gray-900">Sutartys</h1>
+            <p class="mt-2 text-sm text-gray-700">Aktyvių ir archyvuotų sutarčių sąrašas.</p>
+        </div>
+    </div>
+    
+    <div class="mt-4">
+        <div class="border-b border-gray-200">
+            <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+                <button id="tab-active" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm" onclick="showTab('active')">
+                    Aktyvios sutartys ({{ active_leases.count }})
+                </button>
+                <button id="tab-past" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm" onclick="showTab('past')">
+                    Archyvas ({{ archived_leases.count }})
+                </button>
+            </nav>
+        </div>
+    </div>
+
+    <div id="content-active" class="mt-8 flex-col" style="display: none;">
+        <div class="-my-2 -mx-4 overflow-x-auto sm:-mx-6 lg:-mx-8">
+            <div class="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">
+                <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
+                    <table class="min-w-full divide-y divide-gray-300">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">Nuomininkas</th>
+                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">NT Objektas</th>
+                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Sutarties terminas</th>
+                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Įmoka</th>
+                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Rodmenys</th>
+                                <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-6 text-right">Veiksmai</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200 bg-white">
+                            {% for lease in active_leases %}
+                            <tr>
+                                <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">{{ lease.tenant.get_full_name }}</td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{{ lease.property }}</td>
+                                <td class="px-3 py-4 text-sm text-gray-500">
+                                    <div>{{ lease.start_date|date:"Y-m-d" }}</div>
+                                    <div class="text-gray-400">{% if lease.end_date %}{{ lease.end_date|date:"Y-m-d" }}{% else %}Neterminuota{% endif %}</div>
+                                </td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{{ lease.rent_price|floatformat:"0" }} €</td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                    {% if lease.utilities_paid_by == 'landlord' %}
+                                        {% if lease.latest_reading %}
+                                            <button data-url="{% url 'latest_readings_popup' lease.id %}" class="open-readings-popup text-blue-600 hover:text-blue-800">
+                                                Peržiūrėti ({{ lease.latest_reading.reading_date|date:"Y-m-d" }})
+                                            </button>
+                                        {% else %}
+                                            <span class="text-gray-400">Nėra pateikta</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-gray-400">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6 space-x-4">
+                                    <a href="{% url 'view_and_sign_contract' lease.id %}" class="text-gray-600 hover:text-indigo-900">Valdyti sutartį</a>
+                                    <a href="{% url 'lease_invoices' lease.id %}" class="text-indigo-600 hover:text-indigo-900">Sąskaitos</a>
+                                    {% if lease.utilities_paid_by == 'landlord' %}
+                                        <button data-url="{% url 'prepare_invoice_popup' lease.id %}" class="generate-invoice-popup-btn inline-flex items-center rounded-md border border-transparent bg-blue-600 px-3 py-2 text-sm font-medium leading-4 text-white shadow-sm hover:bg-blue-700">Generuoti sąskaitą</button>
+                                    {% else %}
+                                        <a href="{% url 'generate_invoice' lease.id %}" class="inline-flex items-center rounded-md border border-transparent bg-blue-600 px-3 py-2 text-sm font-medium leading-4 text-white shadow-sm hover:bg-blue-700">Generuoti sąskaitą</a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="6" class="text-center py-5 text-gray-500">Aktyvių sutarčių nėra.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="content-past" class="mt-8 flex-col" style="display: none;">
+        <div class="-my-2 -mx-4 overflow-x-auto sm:-mx-6 lg:-mx-8">
+            <div class="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">
+                <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
+                    <table class="min-w-full divide-y divide-gray-300">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">Nuomininkas</th>
+                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">NT Objektas</th>
+                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Sutarties terminas</th>
+                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Būsena</th>
+                                <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-6 text-right">Veiksmai</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200 bg-white">
+                            {% for lease in archived_leases %}
+                            <tr>
+                                <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">{{ lease.tenant.get_full_name }}</td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{{ lease.property }}</td>
+                                <td class="px-3 py-4 text-sm text-gray-500">
+                                    <div>{{ lease.start_date|date:"Y-m-d" }}</div>
+                                    <div class="text-gray-400">{% if lease.end_date %}{{ lease.end_date|date:"Y-m-d" }}{% else %}Neterminuota{% endif %}</div>
+                                </td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                    {% if lease.status == 'terminated' %}
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Nutraukta</span>
+                                    {% elif lease.status == 'expired' %}
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">Pasibaigusi</span>
+                                    {% endif %}
+                                </td>
+                                <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6 space-x-4">
+                                    <a href="{% url 'view_and_sign_contract' lease.id %}" class="text-gray-600 hover:text-indigo-900">Peržiūrėti</a>
+                                    <a href="{% url 'lease_invoices' lease.id %}" class="text-indigo-600 hover:text-indigo-900">Sąskaitos</a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="5" class="text-center py-5 text-gray-500">Archyvuotų sutarčių nėra.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function showTab(tabName) {
+        // Paslepiame visus turinius
+        document.getElementById('content-active').style.display = 'none';
+        document.getElementById('content-past').style.display = 'none';
+        
+        // Nuimame aktyvias stiliaus klases nuo visų mygtukų
+        document.getElementById('tab-active').classList.remove('border-indigo-500', 'text-indigo-600');
+        document.getElementById('tab-active').classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700');
+        document.getElementById('tab-past').classList.remove('border-indigo-500', 'text-indigo-600');
+        document.getElementById('tab-past').classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700');
+        
+        // Parodome pasirinktą turinį
+        document.getElementById('content-' + tabName).style.display = 'flex';
+        
+        // Pridedame aktyvias stiliaus klases pasirinktam mygtukui
+        const activeTabButton = document.getElementById('tab-' + tabName);
+        activeTabButton.classList.add('border-indigo-500', 'text-indigo-600');
+        activeTabButton.classList.remove('border-transparent', 'text-gray-500', 'hover:text-gray-700');
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Pagal nutylėjimą, kai puslapis užsikrauna, parodome aktyvių sutarčių skiltį
+        showTab('active');
+
+        const modalBackdrop = document.getElementById('modal-backdrop');
+        const modalContent = document.getElementById('modal-content');
+
+        document.body.addEventListener('click', async function(event) {
+            const button = event.target.closest('button');
+            if (!button || !button.dataset.url) return;
+            
+            event.preventDefault();
+
+            if (button.matches('.terminate-lease-btn, .open-readings-popup, .generate-invoice-popup-btn')) {
+                try {
+                    const response = await fetch(button.dataset.url);
+                    modalContent.innerHTML = await response.text();
+                    modalBackdrop.classList.remove('hidden');
+
+                    if (button.matches('.generate-invoice-popup-btn')) {
+                        initializeFormsetLogic();
+                    }
+                } catch (error) {
+                    console.error("Nepavyko užkrauti formos:", error);
+                }
+            }
+        });
+
+        modalBackdrop.addEventListener('click', function(event) {
+            if (event.target === modalBackdrop || event.target.closest('#cancel-terminate, #cancel-popup')) {
+                modalBackdrop.classList.add('hidden');
+                modalContent.innerHTML = '';
+            }
+        });
+    });
+
+    function initializeFormsetLogic() {
+        const formContainer = document.querySelector('#utility-bill-form');
+        if (!formContainer) return;
+
+        const addRowButton = formContainer.querySelector('#add-form-row');
+        const formsetContainer = formContainer.querySelector('#formset-container');
+        const emptyFormTemplate = document.querySelector('#empty-form-template').innerHTML;
+        const totalFormsInput = formContainer.querySelector('#id_utilities-TOTAL_FORMS');
+
+        addRowButton.addEventListener('click', function() {
+            const formIndex = parseInt(totalFormsInput.value);
+            const newRowHtml = emptyFormTemplate.replace(/__prefix__/g, formIndex);
+            
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = newRowHtml;
+            formsetContainer.appendChild(tempDiv.firstElementChild);
+            totalFormsInput.value = formIndex + 1;
+        });
+
+        formsetContainer.addEventListener('click', function(e) {
+            const removeButton = e.target.closest('.remove-form-row');
+            if (removeButton) {
+                const rowToRemove = removeButton.closest('.form-row');
+                const deleteInput = rowToRemove.querySelector('input[type="checkbox"][name$="-DELETE"]');
+                if (deleteInput) deleteInput.checked = true;
+                rowToRemove.style.display = 'none';
+            }
+        });
+    }
+</script>
+{% endblock %}

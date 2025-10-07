@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sutarčių archyvas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-gray-100">
+    <div class="flex h-screen bg-gray-100">
+        {% include 'nomoklis_app/_tenant_sidebar.html' %}
+        <div class="flex-1 flex flex-col overflow-hidden">
+            {% include 'nomoklis_app/_header.html' %}
+            <main class="flex-1 overflow-x-hidden overflow-y-auto">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    <div class="sm:flex sm:items-center">
+                        <div class="sm:flex-auto">
+                            <h1 class="text-2xl font-semibold text-gray-900">Sutarčių archyvas</h1>
+                            <p class="mt-2 text-sm text-gray-700">Pasibaigusių sutarčių, kurioms palikote atsiliepimą, sąrašas.</p>
+                        </div>
+                    </div>
+                    <div class="mt-8 flex flex-col">
+                        <div class="-my-2 -mx-4 overflow-x-auto sm:-mx-6 lg:-mx-8">
+                            <div class="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">
+                                <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
+                                    <table class="min-w-full divide-y divide-gray-300">
+                                        <thead class="bg-gray-50">
+                                            <tr>
+                                                <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">NT Objektas</th>
+                                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Nuomos terminas</th>
+                                                <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-6"><span class="sr-only">Veiksmai</span></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-gray-200 bg-white">
+                                            {% for lease in archived_leases %}
+                                            <tr>
+                                                <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">{{ lease.property }}</td>
+                                                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{{ lease.start_date|date:"Y-m-d" }} - {{ lease.end_date|date:"Y-m-d" }}</td>
+                                                <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+                                                    <a href="{% url 'view_and_sign_contract' lease.id %}" class="text-indigo-600 hover:text-indigo-900">Peržiūrėti</a>
+                                                </td>
+                                            </tr>
+                                            {% empty %}
+                                            <tr><td colspan="3" class="text-center py-5 text-gray-500">Archyvas tuščias.</td></tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,15 @@
+services:
+  web:
+    build: .
+    env_file:
+      - .env
+    ports:
+      - "80:8000"
+    volumes:
+      # Prijungiame kodą, kad galėtumėte redaguoti...
+      - .:/app
+      # ... BET sukuriame ANONIMINĮ Volume mountą STATICFILES katalogui
+      # Tai užtikrina, kad jūsų LOKALUS, tuščias STATICFILES katalogas NEPERRAŠYTŲ
+      # tų failų, kuriuos sukūrė Docker build metu!
+      - /app/staticfiles
+    command: /usr/bin/python3 -m gunicorn --bind 0.0.0.0:8000 Nomoklis.wsgi:application

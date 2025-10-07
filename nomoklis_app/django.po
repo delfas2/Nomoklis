@@ -1,0 +1,43 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Django\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-01-01 00:00+0000\n"
+"PO-Revision-Date: 2024-01-01 00:00+0000\n"
+"Last-Translator: Your Name <your.email@example.com>\n"
+"Language-Team: Lithuanian <lt@li.org>\n"
+"Language: lt\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+
+msgid "The password is too similar to the %(verbose_name)s."
+msgstr "Slaptažodis yra per daug panašus į jūsų %(verbose_name)s."
+
+msgid "Your password can’t be too similar to your other personal information."
+msgstr "Jūsų slaptažodis negali būti per daug panašus į kitą asmeninę informaciją."
+
+msgid "This password is too short. It must contain at least %(min_length)d character."
+msgid_plural "This password is too short. It must contain at least %(min_length)d characters."
+msgstr[0] "Šis slaptažodis per trumpas. Jį turi sudaryti bent %(min_length)d simbolis."
+msgstr[1] "Šis slaptažodis per trumpas. Jį turi sudaryti bent %(min_length)d simboliai."
+msgstr[2] "Šis slaptažodis per trumpas. Jį turi sudaryti bent %(min_length)d simbolių."
+
+msgid "This password is too common."
+msgstr "Šis slaptažodis yra per daug paplitęs."
+
+msgid "This password is entirely numeric."
+msgstr "Šis slaptažodis sudarytas vien iš skaičių."
+
+msgid "Your password must contain at least %(min_length)d character."
+msgid_plural "Your password must contain at least %(min_length)d characters."
+msgstr[0] "Jūsų slaptažodį turi sudaryti bent %(min_length)d simbolis."
+msgstr[1] "Jūsų slaptažodį turi sudaryti bent %(min_length)d simboliai."
+msgstr[2] "Jūsų slaptažodį turi sudaryti bent %(min_length)d simbolių."
+
+msgid "Your password can’t be a commonly used password."
+msgstr "Jūsų slaptažodis negali būti dažnai naudojamas."
+
+msgid "Your password can’t be entirely numeric."
+msgstr "Jūsų slaptažodis negali būti sudarytas vien iš skaičių."

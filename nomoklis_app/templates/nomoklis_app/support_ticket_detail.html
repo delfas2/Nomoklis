@@ -1,0 +1,67 @@
+{% extends base_template %}
+
+{% block title %}Užklausos peržiūra{% endblock %}
+
+{% block content %}
+<div class="flex-1 flex flex-col overflow-hidden">
+    {% include 'nomoklis_app/_header.html' %}
+
+    <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+            <div class="bg-white p-8 rounded-lg shadow-md">
+                <div class="border-b pb-4 mb-6">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h1 class="text-2xl font-bold text-gray-800">{{ ticket.subject }}</h1>
+                            <p class="text-sm text-gray-500">Užklausa #{{ ticket.id }}</p>
+                        </div>
+                        {% if ticket.status == 'new' %}
+                            <span class="px-3 py-1 text-sm font-semibold rounded-full bg-blue-100 text-blue-800">Nauja</span>
+                        {% elif ticket.status == 'in_progress' %}
+                            <span class="px-3 py-1 text-sm font-semibold rounded-full bg-yellow-100 text-yellow-800">Vykdoma</span>
+                        {% elif ticket.status == 'resolved' %}
+                            <span class="px-3 py-1 text-sm font-semibold rounded-full bg-green-100 text-green-800">Išspręsta</span>
+                        {% else %}
+                            <span class="px-3 py-1 text-sm font-semibold rounded-full bg-gray-100 text-gray-800">Uždaryta</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="space-y-6">
+                    <!-- Originalus pranešimas -->
+                    <div class="flex items-start space-x-4">
+                        <img class="h-10 w-10 rounded-full object-cover" src="{{ ticket.user.profile.profile_image.url }}" alt="">
+                        <div class="flex-1">
+                            <div class="bg-gray-100 p-4 rounded-lg">
+                                <p class="text-sm text-gray-800">{{ ticket.description|linebreaksbr }}</p>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">{{ ticket.created_at|date:"Y-m-d H:i" }}</p>
+                        </div>
+                    </div>
+
+                    <!-- Atsakymai -->
+                    {% for update in updates %}
+                    <div class="flex items-start space-x-4 {% if update.user == request.user %}flex-row-reverse space-x-reverse{% endif %}">
+                        <img class="h-10 w-10 rounded-full object-cover" src="{{ update.user.profile.profile_image.url }}" alt="">
+                        <div class="flex-1">
+                            <div class="p-4 rounded-lg {% if update.user.is_superuser %}bg-blue-100{% else %}bg-gray-100{% endif %}">
+                                <p class="text-sm text-gray-800">{{ update.message|linebreaksbr }}</p>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1 {% if update.user == request.user %}text-right{% endif %}">{{ update.created_at|date:"Y-m-d H:i" }}</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                {% if ticket.status != 'closed' and ticket.status != 'resolved' %}
+                <form method="post" class="mt-8 border-t pt-6">
+                    {% csrf_token %}
+                    {{ form.as_p }}
+                    <button type="submit" class="w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300 mt-2">Siųsti atsakymą</button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}

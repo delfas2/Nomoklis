@@ -1,0 +1,40 @@
+<div class="p-8 md:p-12">
+    <h2 class="text-2xl font-bold mb-2 text-center">Priskirti nuomininką objektui</h2>
+    <p class="text-gray-600 mb-8 text-center font-semibold">{{ property.street }}, {{ property.city }}</p>
+
+    <form method="post" action="{% url 'assign_tenant' property.id %}" class="space-y-4">
+        {% csrf_token %}
+        <div>
+            {{ form.email.label_tag }}
+            {{ form.email }}
+            {% for error in form.email.errors %}<p class="text-red-500 text-xs mt-1">{{ error }}</p>{% endfor %}
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                {{ form.start_date.label_tag }}
+                {{ form.start_date }}
+            </div>
+            <div>
+                {{ form.end_date.label_tag }}
+                {{ form.end_date }}
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+             <div>
+                {{ form.payment_day.label_tag }}
+                {{ form.payment_day }}
+            </div>
+            <div>
+                {{ form.rent_price.label_tag }}
+                {{ form.rent_price }}
+            </div>
+        </div>
+
+        <div class="flex justify-end space-x-4 pt-4">
+            <button type="button" id="cancel-assign" class="bg-gray-200 text-gray-700 font-semibold py-2 px-6 rounded-lg hover:bg-gray-300">Atšaukti</button>
+            <button type="submit" class="bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-blue-700">Priskirti</button>
+        </div>
+    </form>
+</div>

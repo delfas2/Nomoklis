@@ -1,0 +1,37 @@
+<form id="utility-bill-form" method="post" action="{% url 'prepare_invoice_popup' lease.id %}">
+    {% csrf_token %}
+    <div class="p-6">
+        <div class="flex justify-between items-start">
+            <h2 class="text-xl font-bold text-gray-800">Sąskaitos generavimas</h2>
+            <button type="button" id="cancel-popup" class="text-gray-400 hover:text-gray-600">&times;</button>
+        </div>
+        <p class="text-sm text-gray-500 mb-4">Pridėkite komunalinių mokesčių eilutes.</p>
+        <hr class="my-4">
+
+        {{ formset.management_form }}
+        <div id="formset-container" class="space-y-3">
+            {% for form in formset %}
+            <div class="flex items-center space-x-2 form-row">
+                <div class="flex-grow">{{ form.description }}</div>
+                <div class="w-1/3">{{ form.amount }}</div>
+                <div class="hidden">{{ form.DELETE }}</div>
+                <button type="button" class="remove-form-row text-red-500 hover:text-red-700 p-2 leading-none">&times;</button>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <button type="button" id="add-form-row" class="mt-4 text-sm font-medium text-blue-600 hover:text-blue-800">+ Pridėti eilutę</button>
+    </div>
+    <div class="bg-gray-50 px-6 py-3 flex justify-end">
+        <button type="submit" class="bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-blue-700">Generuoti</button>
+    </div>
+</form>
+
+<template id="empty-form-template">
+    <div class="flex items-center space-x-2 form-row">
+        <div class="flex-grow">{{ formset.empty_form.description }}</div>
+        <div class="w-1/3">{{ formset.empty_form.amount }}</div>
+        <div class="hidden">{{ formset.empty_form.DELETE }}</div>
+        <button type="button" class="remove-form-row text-red-500 hover:text-red-700 p-2 leading-none">&times;</button>
+    </div>
+</template>

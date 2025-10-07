@@ -1,0 +1,68 @@
+{% extends 'nomoklis_app/_admin_base.html' %}
+
+{% block title %}Užklausos valdymas{% endblock %}
+
+{% block content %}
+<header class="h-20 bg-white shadow-sm flex items-center justify-between px-8 flex-shrink-0">
+    <h1 class="text-2xl font-semibold text-gray-800">Užklausos #{{ ticket.id }} valdymas</h1>
+</header>
+
+<div class="flex-1 overflow-y-auto p-8">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        <!-- Pokalbio langas -->
+        <div class="lg:col-span-2 bg-white shadow-sm rounded-lg p-6">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">{{ ticket.subject }}</h2>
+            
+            <div class="space-y-6 max-h-[60vh] overflow-y-auto pr-4">
+                <!-- Originalus pranešimas -->
+                <div class="flex items-start space-x-4">
+                    <img class="h-10 w-10 rounded-full object-cover" 
+                         src="{% if ticket.user.profile and ticket.user.profile.profile_image %}{{ ticket.user.profile.profile_image.url }}{% else %}/media/profile_pics/default.jpg{% endif %}" 
+                         alt="Vartotojo profilio nuotrauka">
+                    <div class="flex-1">
+                        <div class="bg-gray-100 p-4 rounded-lg">
+                            <p class="text-sm text-gray-800">{{ ticket.description|linebreaksbr }}</p>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">{{ ticket.user.get_full_name }} • {{ ticket.created_at|date:"Y-m-d H:i" }}</p>
+                    </div>
+                </div>
+
+                <!-- Atsakymai -->
+                {% for update in ticket.updates.all %}
+                <div class="flex items-start space-x-4 {% if update.user.is_superuser %}flex-row-reverse space-x-reverse{% endif %}">
+                    <img class="h-10 w-10 rounded-full object-cover" 
+                         src="{% if update.user.profile and update.user.profile.profile_image %}{{ update.user.profile.profile_image.url }}{% else %}/media/profile_pics/default.jpg{% endif %}" 
+                         alt="Vartotojo profilio nuotrauka">
+                    <div class="flex-1">
+                        <div class="p-4 rounded-lg {% if update.user.is_superuser %}bg-blue-500 text-white{% else %}bg-gray-100{% endif %}">
+                            <p class="text-sm">{{ update.message|linebreaksbr }}</p>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1 {% if update.user.is_superuser %}text-right{% endif %}">
+                            {% if update.user.is_superuser %}Administratorius{% else %}{{ update.user.get_full_name }}{% endif %} • {{ update.created_at|date:"Y-m-d H:i" }}
+                        </p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Valdymo forma -->
+        <div class="lg:col-span-1">
+            <form method="post" class="bg-white shadow-sm rounded-lg p-6 space-y-6">
+                {% csrf_token %}
+                <div>
+                    <label for="{{ status_form.status.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ status_form.status.label }}</label>
+                    {{ status_form.status }}
+                </div>
+                <div>
+                    <label for="{{ message_form.message.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ message_form.message.label }}</label>
+                    {{ message_form.message }}
+                </div>
+                <button type="submit" class="w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700">Atnaujinti ir atsakyti</button>
+            </form>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

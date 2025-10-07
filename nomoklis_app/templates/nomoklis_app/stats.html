@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Statistikos Puslapis</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .sidebar-active { background-color: #eff6ff; color: #1d4ed8; font-weight: 600; }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <div class="flex h-screen bg-gray-100">
+        {% include 'nomoklis_app/_sidebar.html' %}
+
+        <div class="flex-1 flex flex-col overflow-hidden">
+            {% include 'nomoklis_app/_header.html' %}
+
+            <main class="flex-1 overflow-x-hidden overflow-y-auto">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+                        <div>
+                            <h1 class="text-3xl font-bold text-gray-800">Statistika ir Ataskaitos</h1>
+                            <p class="mt-1 text-gray-600">Peržiūrėkite savo nuomos portfelio našumą.</p>
+                        </div>
+                    </div>
+
+                    <div x-data="{ tab: '{{ active_tab }}' }">
+                        <div class="border-b border-gray-200">
+                            <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+                                <a href="#" @click.prevent="tab = 'overview'" :class="{ 'border-blue-500 text-blue-600': tab === 'overview', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': tab !== 'overview' }" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Bendra apžvalga</a>
+                                <a href="#" @click.prevent="tab = 'profitability'" :class="{ 'border-blue-500 text-blue-600': tab === 'profitability', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': tab !== 'profitability' }" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Pelningumas</a>
+                                <a href="#" @click.prevent="tab = 'leases'" :class="{ 'border-blue-500 text-blue-600': tab === 'leases', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': tab !== 'leases' }" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Sutarčių analizė</a>
+                                <a href="#" @click.prevent="tab = 'maintenance'" :class="{ 'border-blue-500 text-blue-600': tab === 'maintenance', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': tab !== 'maintenance' }" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Priežiūra</a>
+                            </nav>
+                        </div>
+
+                        <div class="mt-8">
+                            <div x-show="tab === 'overview'" x-transition>
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                    <div class="bg-white p-6 rounded-lg shadow-md"><p class="text-sm font-medium text-gray-500">Grynosios Pajamos ({{ "now"|date:"Y" }})</p><p class="mt-2 text-3xl font-bold text-gray-800">{{ total_annual_income|floatformat:"2" }} €</p><p class="mt-1 text-sm text-gray-500">Pajamos atėmus išlaidas</p></div>
+                                    <div class="bg-white p-6 rounded-lg shadow-md"><p class="text-sm font-medium text-gray-500">Mėnesio Vidurkis</p><p class="mt-2 text-3xl font-bold text-gray-800">{{ monthly_average_income|floatformat:"0" }} €</p><p class="mt-1 text-sm text-gray-500">Vidutinės mėnesio pajamos</p></div>
+                                    <div class="bg-white p-6 rounded-lg shadow-md"><p class="text-sm font-medium text-gray-500">Užimtumo Lygis</p><p class="mt-2 text-3xl font-bold text-gray-800">{{ occupancy_rate|floatformat:"0" }}%</p><p class="mt-1 text-sm text-gray-500">{{ rented_properties_count }} iš {{ total_properties_count }} objektų yra išnuomoti</p></div>
+                                    <div class="bg-white p-6 rounded-lg shadow-md"><p class="text-sm font-medium text-gray-500">Problemų sprendimo išlaidos ({{ "now"|date:"Y" }})</p><p class="mt-2 text-3xl font-bold text-gray-800">{{ total_expenses|floatformat:"2" }} €</p><p class="mt-1 text-sm text-gray-500">Bendra suma</p></div>
+                                </div>
+                                <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mt-8">
+                                    <div class="lg:col-span-3 bg-white p-6 rounded-lg shadow-md flex flex-col"><h3 class="text-lg font-semibold text-gray-700 mb-4">Mėnesinės pajamos (Visi NT)</h3><div class="relative h-80"><canvas id="incomeChart"></canvas></div></div>
+                                    <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-md flex flex-col"><h3 class="text-lg font-semibold text-gray-700 mb-4">Išlaidų Paskirstymas (Visi NT)</h3><div class="relative h-80"><canvas id="expensesChart"></canvas></div></div>
+                                </div>
+                            </div>
+
+                            <div x-show="tab === 'profitability'" x-transition style="display: none;">
+                                <div class="bg-white p-6 rounded-lg shadow-md">
+                                    <div class="flex justify-between items-center mb-4">
+                                        <h3 class="text-lg font-semibold text-gray-700">Mėnesinis Pelningumas</h3>
+                                        <form method="get" class="w-1/4">
+                                            <input type="hidden" name="tab" value="profitability">
+                                            <select name="property_id" onchange="this.form.submit()" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                                                <option value="">Visi NT Objektai</option>
+                                                {% for prop in all_user_properties %}
+                                                <option value="{{ prop.id }}" {% if selected_property_id == prop.id|stringformat:"s" %}selected{% endif %}>{{ prop }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </form>
+                                    </div>
+                                    <div class="relative h-96">
+                                        <canvas id="profitabilityChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div x-show="tab === 'leases'" x-transition style="display: none;">
+                                <div class="bg-white p-6 rounded-lg shadow-md">
+                                    <h3 class="text-lg font-semibold text-gray-700 mb-4">Sutarčių Analizė Pagal NT Objektą</h3>
+                                    <div class="overflow-x-auto">
+                                        <table class="min-w-full divide-y divide-gray-200">
+                                            <thead class="bg-gray-50">
+                                                <tr>
+                                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">NT Objektas</th>
+                                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vid. Nuomos Trukmė (d.)</th>
+                                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vid. Prastova (d.)</th>
+                                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Konversija (%)</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody class="bg-white divide-y divide-gray-200">
+                                                {% for item in lease_analysis_by_property %}
+                                                <tr>
+                                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ item.name }}</td>
+                                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ item.avg_duration }}</td>
+                                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ item.avg_vacancy }}</td>
+                                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ item.conversion_rate }}%</td>
+                                                </tr>
+                                                {% empty %}
+                                                <tr><td colspan="4" class="px-6 py-4 text-center text-sm text-gray-500">Duomenų nėra</td></tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div x-show="tab === 'maintenance'" x-transition style="display: none;">
+                                <div class="bg-white p-6 rounded-lg shadow-md max-w-2xl mx-auto">
+                                    <h3 class="text-lg font-semibold text-gray-700 mb-4">Objektai Pagal Problemų Skaičių ({{ "now"|date:"Y" }})</h3>
+                                    <ul class="divide-y divide-gray-200">
+                                        {% for prop in problematic_properties %}
+                                        <li class="py-4 flex justify-between items-center"><span class="text-sm font-medium text-gray-900">{{ prop }}</span><span class="inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium bg-red-100 text-red-800">{{ prop.problem_count }} {% if prop.problem_count == 1 %}problema{% else %}problemos{% endif %}</span></li>
+                                        {% empty %}
+                                        <li class="py-4 text-center text-sm text-gray-500">Šiais metais problemų neužregistruota.</li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const incomeCtx = document.getElementById('incomeChart').getContext('2d');
+            new Chart(incomeCtx, {type: 'bar',data: {labels: {{ income_labels|safe }},datasets: [{label: 'Pajamos (€)',data: {{ income_data|safe }},backgroundColor: 'rgba(59, 130, 246, 0.5)',borderColor: 'rgba(59, 130, 246, 1)',borderWidth: 1,borderRadius: 4}]},options: {responsive: true, maintainAspectRatio: false, scales: {y: {beginAtZero: true}}, plugins: {legend: {display: false}}}});
+            
+            const expensesCtx = document.getElementById('expensesChart').getContext('2d');
+            new Chart(expensesCtx, {type: 'doughnut',data: {labels: {{ expenses_labels|safe }},datasets: [{label: 'Išlaidos (€)',data: {{ expenses_data|safe }},backgroundColor: ['rgba(239, 68, 68, 0.7)', 'rgba(245, 158, 11, 0.7)', 'rgba(59, 130, 246, 0.7)', 'rgba(16, 185, 129, 0.7)', 'rgba(107, 114, 128, 0.7)'],borderColor: '#ffffff',borderWidth: 2}]},options: {responsive: true, maintainAspectRatio: false, plugins: {legend: {position: 'bottom'}}}});
+
+            const profitabilityCtx = document.getElementById('profitabilityChart').getContext('2d');
+            new Chart(profitabilityCtx, {
+                type: 'bar',
+                data: {
+                    labels: {{ profitability_labels|safe }},
+                    datasets: [
+                        {label: 'Išlaidos (€)', data: {{ profitability_expenses_data|safe }}, backgroundColor: 'rgba(255, 99, 132, 0.7)'},
+                        {label: 'Pelnas (€)', data: {{ profitability_profit_data|safe }}, backgroundColor: 'rgba(75, 192, 192, 0.7)'}
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    scales: {
+                        x: {stacked: true},
+                        y: {stacked: true, beginAtZero: true}
+                    },
+                    plugins: {legend: {position: 'top'}}
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+<div class="p-8">
+    <h2 class="text-2xl font-bold mb-2 text-center">Patvirtinti nuomos sutartį</h2>
+    <p class="text-gray-600 mb-4 text-center">Objektas: <span class="font-semibold">{{ rental_request.property.street }}</span></p>
+    <p class="text-gray-600 mb-8 text-center">Nuomininkas: <span class="font-semibold">{{ rental_request.tenant.get_full_name }}</span></p>
+
+    <form method="post" action="{% url 'confirm_rental_request' rental_request.id %}" class="space-y-4">
+        {% csrf_token %}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>{{ form.start_date.label_tag }}{{ form.start_date }}</div>
+            <div>{{ form.end_date.label_tag }}{{ form.end_date }}</div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>{{ form.rent_price.label_tag }}{{ form.rent_price }}</div>
+            <div>{{ form.payment_day.label_tag }}{{ form.payment_day }}</div>
+        </div>
+        
+        <div class="flex justify-end space-x-4 pt-6">
+            <button type="button" class="cancel-confirm-btn bg-gray-200 text-gray-700 font-semibold py-2 px-6 rounded-lg hover:bg-gray-300">Atšaukti</button>
+            <button type="submit" class="bg-green-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-green-700">Patvirtinti ir sudaryti sutartį</button>
+        </div>
+    </form>
+</div>

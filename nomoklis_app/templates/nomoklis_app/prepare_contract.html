@@ -1,0 +1,36 @@
+{% extends 'nomoklis_app/_landlord_base.html' %}
+
+{% block title %}Sutarties Ruošimas{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <h1 class="text-2xl font-bold text-gray-800 mb-6">Sutarties ruošimas ir generavimas</h1>
+    
+    <form method="post" class="bg-white p-6 rounded-lg shadow-md space-y-6">
+        {% csrf_token %}
+        
+        <div>
+            <h2 class="text-lg font-semibold text-gray-900 border-b pb-2 mb-4">Sutarties detalės</h2>
+            <div>
+                <label for="{{ form.deposit_amount.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ form.deposit_amount.label }}</label>
+                {{ form.deposit_amount }}
+                <p class="mt-2 text-sm text-gray-500">{{ form.deposit_amount.help_text }}</p>
+            </div>
+        </div>
+
+        <div>
+            <h2 class="text-lg font-semibold text-gray-900 border-b pb-2 mb-4">Sutarties tekstas</h2>
+            <div>
+                <label for="{{ form.contract_text.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ form.contract_text.label }}</label>
+                {{ form.contract_text }}
+                <p class="mt-2 text-sm text-gray-500">{{ form.contract_text.help_text }}</p>
+            </div>
+        </div>
+
+        <div class="flex justify-end pt-4">
+            <a href="{% url 'nuomotojas_dashboard' %}" class="bg-gray-200 text-gray-700 font-semibold py-2 px-6 rounded-lg hover:bg-gray-300">Atšaukti</a>
+            <button type="submit" class="ml-4 bg-green-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-green-700">Patvirtinti ir sugeneruoti sutartį</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

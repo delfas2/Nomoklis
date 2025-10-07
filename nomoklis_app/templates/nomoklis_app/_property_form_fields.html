@@ -1,0 +1,155 @@
+{% load static %}
+
+<div class="space-y-8 divide-y divide-gray-200">
+    <div class="border-b pb-8">
+        <div>
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">Pagrindinė informacija</h2>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="sm:col-span-4">
+                <label for="id_street" class="block text-sm font-medium text-gray-700">Gatvė</label>
+                {{ form.street }}
+                {{ form.street.errors }}
+            </div>
+
+            <div class="sm:col-span-2">
+                <label for="id_house_number" class="block text-sm font-medium text-gray-700">Namo nr.</label>
+                {{ form.house_number }}
+                {{ form.house_number.errors }}
+            </div>
+
+            <div class="sm:col-span-2">
+                <label for="id_flat_number" class="block text-sm font-medium text-gray-700">Buto nr. (neprivaloma)</label>
+                {{ form.flat_number }}
+                {{ form.flat_number.errors }}
+            </div>
+
+            <div class="sm:col-span-2">
+                <label for="id_city" class="block text-sm font-medium text-gray-700">Miestas</label>
+                {{ form.city }}
+                {{ form.city.errors }}
+            </div>
+
+            <div class="sm:col-span-2">
+                <label for="id_district" class="block text-sm font-medium text-gray-700">Rajonas (neprivaloma)</label>
+                {{ form.district }}
+                {{ form.district.errors }}
+            </div>
+        </div>
+    </div>
+
+    <div class="border-b pb-8">
+        <div>
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">Parametrai</h2>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="sm:col-span-3">
+                <label for="id_property_type" class="block text-sm font-medium text-gray-700">NT tipas</label>
+                {{ form.property_type }}
+                {{ form.property_type.errors }}
+            </div>
+
+            <div class="sm:col-span-3">
+                <label for="id_status" class="block text-sm font-medium text-gray-700">Būsena</label>
+                {{ form.status }}
+                {{ form.status.errors }}
+            </div>
+
+            <div class="sm:col-span-2">
+                <label for="id_area" class="block text-sm font-medium text-gray-700">Plotas, m²</label>
+                {{ form.area }}
+                {{ form.area.errors }}
+            </div>
+
+            <div class="sm:col-span-1">
+                <label for="id_rooms" class="block text-sm font-medium text-gray-700">Kambariai</label>
+                {{ form.rooms }}
+                {{ form.rooms.errors }}
+            </div>
+
+            <div class="sm:col-span-1">
+                <label for="id_floor" class="block text-sm font-medium text-gray-700">Aukštas</label>
+                {{ form.floor }}
+                {{ form.floor.errors }}
+            </div>
+
+            <div class="sm:col-span-2">
+                <label for="id_total_floors" class="block text-sm font-medium text-gray-700">Aukštų skaičius</label>
+                {{ form.total_floors }}
+                {{ form.total_floors.errors }}
+            </div>
+
+            <div class="md:col-span-3">
+                <label for="id_description" class="block text-sm font-medium text-gray-700">Aprašymas</label>
+                {{ form.description }}
+                {{ form.description.errors }}
+            </div>
+        </div>
+    </div>
+
+    <div class="border-b pb-8">
+        <div>
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Nuotraukos</h3>
+            <p class="mt-1 text-sm text-gray-500">Įkelkite savo NT objekto nuotraukas.</p>
+        </div>
+        <div class="mt-6">
+            <label for="id_images" class="block text-sm font-medium text-gray-700">Pridėti naujų nuotraukų</label>
+            {{ form.images }}
+        </div>
+        {% if property.images.all %}
+        <div class="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4" id="image-gallery">
+            {% for image in property.images.all %}
+            <div class="relative group" id="image-container-{{ image.id }}">
+                <img src="{{ image.image.url }}" alt="NT nuotrauka" class="rounded-lg object-cover h-32 w-full">
+                <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-300 flex items-center justify-center">
+                    <button type="button" data-image-id="{{ image.id }}" class="delete-image-btn opacity-0 group-hover:opacity-100 p-2 bg-red-600 text-white rounded-full hover:bg-red-700 focus:outline-none">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg>
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="border-b pb-8">
+        <div>
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">Ypatybės ir patogumai</h2>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {% for field in form %}
+                {% if field.field.widget.input_type == 'checkbox' %}
+                <label class="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                    {{ field }}
+                    <span class="text-sm font-medium text-gray-800">{{ field.label }}</span>
+                </label>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('click', function(e) {
+    if (e.target.closest('.delete-image-btn')) {
+        const button = e.target.closest('.delete-image-btn');
+        const imageId = button.dataset.imageId;
+        if (confirm('Ar tikrai norite ištrinti šią nuotrauką?')) {
+            fetch(`/property/image/delete/${imageId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json'
+                }
+            }).then(response => response.json())
+              .then(data => {
+                  if (data.status === 'success') {
+                      document.getElementById(`image-container-${imageId}`).remove();
+                  } else {
+                      alert(data.message || 'Įvyko klaida trinant nuotrauką.');
+                  }
+              });
+        }
+    }
+});
+</script>

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mano Nuomos Užklausos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .sidebar-active { background-color: #eff6ff; color: #1d4ed8; font-weight: 600; }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <div class="flex h-screen bg-gray-100">
+        {% include 'nomoklis_app/_tenant_sidebar.html' %}
+        <div class="flex-1 flex flex-col overflow-hidden">
+            {% include 'nomoklis_app/_header.html' %}
+            <main class="flex-1 overflow-x-hidden overflow-y-auto">
+                <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800 mb-4">Aktyvios užklausos</h2>
+                        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                            <ul class="divide-y divide-gray-200">
+                                {% for req in pending_requests %}
+                                <li class="p-4 sm:p-6 hover:bg-gray-50">
+                                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between">
+                                        <div>
+                                            <p class="font-semibold text-gray-900">{{ req.property.street }}, {{ req.property.city }}</p>
+                                            <p class="text-sm text-gray-500">Išsiųsta: {{ req.created_at|date:"Y-m-d H:i" }}</p>
+                                        </div>
+                                        <div class="flex items-center space-x-4 mt-4 sm:mt-0">
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Laukiama atsakymo</span>
+                                            <a href="{% url 'chat_room' req.property.owner.id %}" class="text-sm font-semibold text-blue-600 hover:underline">Žinutė nuomotojui</a>
+                                        </div>
+                                    </div>
+                                </li>
+                                {% empty %}
+                                <li class="p-6 text-center text-gray-500">Jūs neturite aktyvių nuomos užklausų.</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="mt-10">
+                        <h2 class="text-2xl font-bold text-gray-800 mb-4">Archyvas</h2>
+                         <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                            <ul class="divide-y divide-gray-200">
+                                {% for req in archived_requests %}
+                                <li class="p-4 sm:p-6">
+                                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between">
+                                        <div>
+                                            <p class="font-semibold text-gray-500">{{ req.property.street }}, {{ req.property.city }}</p>
+                                            <p class="text-sm text-gray-400">Išsiųsta: {{ req.created_at|date:"Y-m-d H:i" }}</p>
+                                        </div>
+                                        <div class="mt-4 sm:mt-0">
+                                            {% if req.status == 'accepted' %}
+                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Priimta</span>
+                                            {% elif req.status == 'rejected' %}
+                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Atmesta</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </li>
+                                {% empty %}
+                                <li class="p-6 text-center text-gray-500">Archyvuotų užklausų nėra.</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+
+                </div>
+            </main>
+        </div>
+    </div>
+</body>
+</html>
