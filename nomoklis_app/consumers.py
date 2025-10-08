@@ -2,18 +2,20 @@
 
 import json
 from channels.generic.websocket import AsyncWebsocketConsumer
+from django.contrib.auth import get_user_model
 from channels.db import database_sync_to_async
 from django.contrib.auth.models import User
 from .models import ChatRoom, ChatMessage, Notification
 from django.contrib.contenttypes.models import ContentType
 
+User = get_user_model()
+
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        # Iš URL gaunamas kambario pavadinimas, pvz., "chat_2_3"
         self.room_name = self.scope['url_route']['kwargs']['room_name']
-        # Grupės pavadinimas turi būti toks pat kaip kambario pavadinimas
-        self.room_group_name = self.room_name
+        self.room_group_name = f'chat_{self.room_name}'
 
+        # Prisijungimas prie kambario grupės
         await self.channel_layer.group_add(
             self.room_group_name,
             self.channel_name
@@ -21,84 +23,60 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await self.accept()
 
     async def disconnect(self, close_code):
+        # Atsijungimas nuo kambario grupės
         await self.channel_layer.group_discard(
             self.room_group_name,
             self.channel_name
         )
 
+    # ★★★ PATAISYTA LOGIKA ★★★
+    # Gauname žinutę iš WebSocket
     async def receive(self, text_data):
         text_data_json = json.loads(text_data)
         message = text_data_json['message']
-        user = self.scope['user']
+        username = text_data_json['username']
 
         # Išsaugome žinutę duomenų bazėje
-        chat_message = await self.save_message(user, message)
+        await self.save_message(username, self.room_name, message)
 
-        # Išsiunčiame žinutę visiems kambario dalyviams
+        # Siunčiame žinutę kambario grupei
         await self.channel_layer.group_send(
             self.room_group_name,
             {
                 'type': 'chat_message',
                 'message': message,
-                'username': user.username,
-                'sender_name': user.get_full_name()
+                'username': username
             }
         )
-        
-        # Informuojame gavėją apie naują žinutę per notifikacijų kanalą
-        recipient = await self.get_recipient()
-        if recipient:
-            await self.channel_layer.group_send(
-                f"notifications_{recipient.id}",
-                {
-                    'type': 'send_notification',
-                    'message': f'Gavote naują žinutę nuo {user.first_name}',
-                    'notification_type': 'chat'
-                }
-            )
-            # Sukuriame pranešimą DB
-            await self.create_chat_notification(chat_message, recipient)
 
+    # Žinutės siuntimas į WebSocket
     async def chat_message(self, event):
         message = event['message']
         username = event['username']
-        sender_name = event['sender_name']
 
-        # Išsiunčiame žinutę atgal į kliento naršyklę
+        # Siunčiame žinutę atgal klientui
         await self.send(text_data=json.dumps({
             'message': message,
-            'username': username,
-            'sender_name': sender_name
+            'username': username
         }))
-
+        
+    # ★★★ NAUJAS ASINCHRONINIS METODAS ŽINUTĖS IŠSAUGOJIMUI ★★★
     @database_sync_to_async
-    def save_message(self, user, message_content):
-        # Randame kambarį ir išsaugome žinutę
-        room, _ = ChatRoom.objects.get_or_create(name=self.room_name)
-        return ChatMessage.objects.create(
-            room=room,
-            sender=user,
-            content=message_content
-        )
+    def save_message(self, username, room_name, message):
+        try:
+            user = User.objects.get(username=username)
+            room = ChatRoom.objects.get(name=room_name)
+            
+            ChatMessage.objects.create(
+                sender=user,
+                room=room,
+                content=message
+            )
+        except User.DoesNotExist:
+            print(f"KLAIDA: Vartotojas '{username}' nerastas.")
+        except ChatRoom.DoesNotExist:
+            print(f"KLAIDA: Pokalbių kambarys '{room_name}' nerastas.")
 
-    @database_sync_to_async
-    def get_recipient(self):
-        """Suranda kitą pokalbio kambario dalyvį."""
-        room = ChatRoom.objects.get(name=self.room_name)
-        # Gauname visus dalyvius ir išfiltruojame siuntėją
-        for participant in room.participants.all():
-            if participant != self.scope['user']:
-                return participant
-        return None
-
-    @database_sync_to_async
-    def create_chat_notification(self, chat_message, recipient):
-        """Sukuria pranešimą duomenų bazėje."""
-        Notification.objects.create(
-            recipient=recipient,
-            message=f"Gavote naują žinutę nuo {chat_message.sender.get_full_name()}",
-            content_object=chat_message
-        )
 
 class NotificationConsumer(AsyncWebsocketConsumer):
     async def connect(self):

@@ -17,6 +17,7 @@ urlpatterns = [
     path("confirm_lease/<int:lease_id>/", views.confirm_lease, name="confirm_lease"),
     path("reject_lease/<int:lease_id>/", views.reject_lease, name="reject_lease"),
     path("dashboard/stats/", views.stats_view, name="stats"),
+    path('chat/<int:user_id>/', views.start_chat_view, name='start_chat'),
     path('chat/landlord/', views.landlord_chat_list, name='landlord_chat_list'),
     path('chat/tenant/', views.tenant_chat_list, name='tenant_chat_list'),
     path('chat/room/<str:room_name>/', views.chat_room_view, name='chat_room'),

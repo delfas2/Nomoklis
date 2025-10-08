@@ -403,6 +403,30 @@ def landlord_contracts_page(request):
     return render(request, 'nomoklis_app/contracts.html', context)
 
 @login_required
+def start_chat_view(request, user_id):
+    other_user = get_object_or_404(User, id=user_id)
+    
+    # Prevent users from starting a chat with themselves
+    if request.user == other_user:
+        messages.error(request, "Negalite pradėti pokalbio su pačiu savimi.")
+        return redirect('dashboard_redirect')
+
+    # Generate a unique room name for the pair of users
+    # We sort the user IDs to ensure the room name is always the same for the same two users
+    if request.user.id < other_user.id:
+        room_name = f"chat_{request.user.id}_{other_user.id}"
+    else:
+        room_name = f"chat_{other_user.id}_{request.user.id}"
+
+    # Find or create the chat room
+    chat_room, created = ChatRoom.objects.get_or_create(name=room_name)
+
+    if created:
+        chat_room.participants.add(request.user, other_user)
+
+    return redirect('chat_room', room_name=room_name)
+
+@login_required
 def chat_room_view(request, room_name):
     chat_room = get_object_or_404(ChatRoom, name=room_name)
 
@@ -799,8 +823,7 @@ def reject_rental_request_view(request, request_id):
         rental_request = get_object_or_404(RentalRequest, id=request_id, property__owner=request.user)
         rental_request.status = 'rejected'
         rental_request.save()
-        messages.info(request, f"Užklausa iš {rental_request.tenant.get_full_name()} buvo atmesta.")
-    return redirect('rental_requests')
+    return redirect('contracts')
 
 @login_required
 def landlord_profile_view(request):

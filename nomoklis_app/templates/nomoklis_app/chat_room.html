@@ -146,7 +146,11 @@
         messageSubmit.onclick = function(e) {
             const message = messageInput.value;
             if (message.trim() === '') return;
-            chatSocket.send(JSON.stringify({'message': message}));
+            // Pridedame 'username', kad serveris žinotų, kas siunčia žinutę
+            chatSocket.send(JSON.stringify({
+                'message': message,
+                'username': currentUsername 
+            }));
             messageInput.value = '';
             messageInput.focus();
         };

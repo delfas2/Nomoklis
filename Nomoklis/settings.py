@@ -12,7 +12,9 @@ SECRET_KEY = "django-insecure-n@(+@z8l%3hj7_^p2lf%r3q^!i&$afmrj2(u-yeq-8#+jwp^kk
 DEBUG = os.environ.get('DEBUG', 'False') == 'True' 
 
 ALLOWED_HOSTS = ['*', 'localhost', '127.0.0.1', 'nomoklis.lt', 'www.nomoklis.lt']
-CSRF_TRUSTED_ORIGINS = ['https://www.nomoklis.lt', 'https://nomoklis.lt']
+
+CSRF_TRUSTED_ORIGINS = ['http://127.0.0.1', 'http://localhost', 'https://nomoklis.lt', 'https://www.nomoklis.lt']
+
 
 # Application definition
 INSTALLED_APPS = [
@@ -120,7 +122,13 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Channels
 CHANNEL_LAYERS = {
-    "default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            # Pakeičiame '127.0.0.1' į 'redis'
+            "hosts": [("redis", 6379)],
+        },
+    },
 }
 
 # Stripe Keys
@@ -143,9 +151,8 @@ LOGOUT_REDIRECT_URL = '/'
 # Allauth specific settings
 ACCOUNT_ADAPTER = 'nomoklis_app.adapters.CustomAccountAdapter'
 SOCIALACCOUNT_ADAPTER = 'nomoklis_app.adapters.MySocialAccountAdapter'
-ACCOUNT_AUTHENTICATION_METHOD = 'email'  # Paliekame dėl senesnių versijų suderinamumo
-ACCOUNT_EMAIL_REQUIRED = True  # Paliekame dėl senesnių versijų suderinamumo
-ACCOUNT_USERNAME_REQUIRED = False  # Paliekame dėl senesnių versijų suderinamumo
+ACCOUNT_LOGIN_METHODS = {'email'}
+ACCOUNT_SIGNUP_FIELDS = ['email', 'password']
 ACCOUNT_EMAIL_VERIFICATION = 'none' # Pasirinkite 'mandatory', 'optional' arba 'none'
 SOCIALACCOUNT_AUTO_SIGNUP = True
 ACCOUNT_LOGOUT_ON_GET = True

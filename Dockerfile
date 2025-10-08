@@ -28,5 +28,6 @@ RUN python3 manage.py collectstatic --noinput
 ENV PYTHONUNBUFFERED 1
 EXPOSE 8000
 
-# 8. Paleidimo komanda, naudojanti teisingą Python3 kelią
-CMD ["/usr/bin/python3", "-m", "gunicorn", "--bind", "0.0.0.0:8000", "Nomoklis.wsgi:application"]
+# 8. Pakeista paleidimo komanda, kuri bus naudojama pagal nutylėjimą
+CMD ["/usr/bin/python3", "-m", "daphne", "-b", "0.0.0.0", "-p", "8000", "Nomoklis.asgi:application"]
+# CMD ["/usr/bin/python3", "manage.py", "check"]

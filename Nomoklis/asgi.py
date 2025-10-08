@@ -1,21 +1,25 @@
 import os
 import django
+from channels.routing import ProtocolTypeRouter, URLRouter
+from channels.auth import AuthMiddlewareStack
 from django.core.asgi import get_asgi_application
 
-# 1. Nurodome kelią iki settings.py failo
+# Nustatome kelią iki nustatymų failo
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'Nomoklis.settings')
 
-# 2. Įkeliame Django nustatymus. Tai privaloma padaryti prieš kitus importus.
+# ★★★ SVARBIAUSIAS ŽINGSNIS ★★★
+# Inicializuojame Django aplikaciją PRIEŠ importuojant routing'ą
 django.setup()
 
-# 3. Tik dabar, kai nustatymai įkelti, importuojame likusias dalis
-from channels.routing import ProtocolTypeRouter, URLRouter
+# Importuojame routing'ą TIK PO inicializacijos
 import nomoklis_app.routing
 
-# 4. Apibrėžiame aplikaciją
+# Sukuriame pagrindinę ASGI aplikaciją
 application = ProtocolTypeRouter({
     "http": get_asgi_application(),
-    "websocket": URLRouter(
-        nomoklis_app.routing.websocket_urlpatterns
+    "websocket": AuthMiddlewareStack(
+        URLRouter(
+            nomoklis_app.routing.websocket_urlpatterns
+        )
     ),
 })
