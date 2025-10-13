@@ -1,4 +1,5 @@
 from django.http import HttpResponse
+from django.core import signing
 import logging
 from fpdf import FPDF
 from django.http import HttpResponse
@@ -360,6 +361,8 @@ def stats_view(request):
     }
     return render(request, 'nomoklis_app/stats.html', context)
 
+from .utils import encode_room_name, decode_room_name
+
 @login_required
 def landlord_contracts_page(request):
     """
@@ -424,11 +427,20 @@ def start_chat_view(request, user_id):
     if created:
         chat_room.participants.add(request.user, other_user)
 
-    return redirect('chat_room', room_name=room_name)
+    # Encode the room name for the URL
+    encoded_room_name = encode_room_name(request.user.id, other_user.id)
+
+    return redirect('chat_room', room_name=encoded_room_name)
 
 @login_required
 def chat_room_view(request, room_name):
-    chat_room = get_object_or_404(ChatRoom, name=room_name)
+    # Decode the room name
+    decoded_room_name = decode_room_name(room_name)
+    if not decoded_room_name:
+        messages.error(request, "Neteisingas pokalbio kambario adresas.")
+        return redirect('dashboard_redirect')
+
+    chat_room = get_object_or_404(ChatRoom, name=decoded_room_name)
 
     # Patikriname, ar vartotojas yra šio kambario dalyvis
     if request.user not in chat_room.participants.all():
@@ -444,7 +456,7 @@ def chat_room_view(request, room_name):
     user_type = request.user.profile.user_type
 
     context = {
-        'room_name': room_name,
+        'room_name': room_name, # Pass the encoded room name to the template
         'other_user': other_user,
         'previous_messages': previous_messages,
         'active_page': 'messages',
@@ -584,6 +596,8 @@ def landlord_chat_list(request):
         # Surandame kitą dalyvį
         other_participant = room.participants.exclude(id=request.user.id).first()
         room.other_participant = other_participant
+        if other_participant:
+            room.encoded_name = encode_room_name(request.user.id, other_participant.id)
     context = {
         'active_page': 'messages',
         'chat_rooms_data': chat_rooms
@@ -601,6 +615,8 @@ def tenant_chat_list(request):
         # Surandame kitą dalyvį
         other_participant = room.participants.exclude(id=request.user.id).first()
         room.other_participant = other_participant
+        if other_participant:
+            room.encoded_name = encode_room_name(request.user.id, other_participant.id)
     context = {
         'active_page': 'messages',
         'chat_rooms_data': chat_rooms
@@ -754,7 +770,10 @@ def submit_rental_request_view(request, property_id):
             )
 
             messages.success(request, f'Jūsų užklausa dėl "{prop.street}" buvo sėkmingai išsiųsta.')
-            return redirect('chat_room', room_name=room_name)
+            
+            # Encode the room name for the URL
+            encoded_room_name = encode_room_name(request.user.id, prop.owner.id)
+            return redirect('chat_room', room_name=encoded_room_name)
     else: # GET metodas
         form = RentalRequestForm(initial={'offered_price': prop.rent_price})
     
@@ -1540,7 +1559,7 @@ def view_and_sign_contract(request, lease_id):
     # PATAISYMAS: Teisingai sugeneruojame kambario pavadinimą ir perduodame jį į šabloną
     user1_id = lease.property.owner.id
     user2_id = lease.tenant.id
-    room_name = f"chat_{min(user1_id, user2_id)}_{max(user1_id, user2_id)}"
+    encoded_room_name = encode_room_name(user1_id, user2_id)
     # Pataisymo pabaiga
 
     utilities_form = UtilitiesPaymentForm(instance=lease)
@@ -1575,7 +1594,7 @@ def view_and_sign_contract(request, lease_id):
     context = {
         'lease': lease,
         'utilities_form': utilities_form,
-        'room_name': room_name, # <-- Perduodame sugeneruotą pavadinimą
+        'room_name': encoded_room_name, # <-- Perduodame sugeneruotą pavadinimą
         'active_page': 'dashboard',
     }
     return render(request, 'nomoklis_app/view_contract.html', context)

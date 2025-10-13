@@ -6,7 +6,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = "django-insecure-n@(+@z8l%3hj7_^p2lf%r3q^!i&$afmrj2(u-yeq-8#+jwp^kk"
-
+CHAT_ENCRYPTION_KEY = 'L9mLt5bbNxNS_yaaQv2eiIGdyNInG9vAfI9_sDBfwFA='
 # SECURITY WARNING: don't run with debug turned on in production!
 # Pakeiskite į False, kai svetainė bus pilnai veikianti
 DEBUG = os.environ.get('DEBUG', 'False') == 'True' 
