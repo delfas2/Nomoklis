@@ -35,7 +35,7 @@ from django.contrib.auth import update_session_auth_hash
 from .forms import (
     CustomUserCreationForm, MeterReadingForm, UtilitiesPaymentForm,
     PrepareContractForm, RentalRequestForm, TenantTerminationForm,
-    TenantCommentForm, PropertyForm, AssignTenantForm, LandlordProblemUpdateForm, SupportTicketForm,
+    TenantCommentForm, PropertyForm, PropertyCreateForm, AssignTenantForm, LandlordProblemUpdateForm, SupportTicketForm,
     SupportTicketUpdateForm, AdminSupportTicketUpdateForm, AdminSupportTicketMessageForm, SystemSettingsForm,
     TerminateLeaseForm, PropertyReviewForm, ProblemReportForm, UtilityBillFormSet,
     UserUpdateForm, ProfileEditForm, ConfirmLeaseForm, UserTypeForm
@@ -191,10 +191,11 @@ def add_property(request):
     if request.method == 'POST':
         print(request.POST)
         print(request.FILES)
-        form = PropertyForm(request.POST, request.FILES)
+        form = PropertyCreateForm(request.POST, request.FILES)
         if form.is_valid():
             property_instance = form.save(commit=False)
             property_instance.owner = request.user
+            property_instance.status = 'nuoma_pasibaigusi'  # Set the status here
             property_instance.save()
             images = request.FILES.getlist('images')
             for image in images:
@@ -204,7 +205,7 @@ def add_property(request):
         else:
             messages.error(request, f'Forma neteisinga: {form.errors.as_json()}')
     else:
-        form = PropertyForm()
+        form = PropertyCreateForm()
     context = {'form': form, 'active_page': 'properties'}
     return render(request, 'nomoklis_app/add_property.html', context)
 

@@ -96,6 +96,17 @@ class PropertyForm(forms.ModelForm):
             'residence_declaration_allowed': forms.CheckboxInput(attrs={'class': 'h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500'}),
         }
 
+class PropertyCreateForm(PropertyForm):
+    class Meta(PropertyForm.Meta):
+        fields = [
+            'street', 'house_number', 'flat_number', 'city', 'district', 
+            'rent_price', 'property_type', 'area', 'rooms', 
+            'floor', 'total_floors', 'description', 'has_balcony', 
+            'has_parking', 'pets_allowed', 'is_furnished', 'has_appliances', 
+            'residence_declaration_allowed'
+        ]
+
+
 
 class AssignTenantForm(forms.ModelForm):
     email = forms.EmailField(label="Nuomininko el. paštas", widget=forms.EmailInput(attrs={'class': 'w-full border-gray-300 rounded-md'}))
