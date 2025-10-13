@@ -7,13 +7,20 @@ from channels.db import database_sync_to_async
 from django.contrib.auth.models import User
 from .models import ChatRoom, ChatMessage, Notification
 from django.contrib.contenttypes.models import ContentType
+from .utils import decode_room_name
 
 User = get_user_model()
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.room_name = self.scope['url_route']['kwargs']['room_name']
-        self.room_group_name = f'chat_{self.room_name}'
+        self.decoded_room_name = decode_room_name(self.room_name)
+
+        if not self.decoded_room_name:
+            await self.close()
+            return
+
+        self.room_group_name = f'chat_{self.decoded_room_name}'
 
         # Prisijungimas prie kambario grupės
         await self.channel_layer.group_add(
@@ -37,7 +44,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         username = text_data_json['username']
 
         # Išsaugome žinutę duomenų bazėje
-        await self.save_message(username, self.room_name, message)
+        await self.save_message(username, self.decoded_room_name, message)
 
         # Siunčiame žinutę kambario grupei
         await self.channel_layer.group_send(
