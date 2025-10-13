@@ -17,6 +17,8 @@ class CustomSignupForm(SignupForm):
     last_name = forms.CharField(max_length=30, label='Pavardė', widget=forms.TextInput(
         attrs={'placeholder': 'Pavardė'}
     ))
+    password = forms.CharField(widget=forms.PasswordInput, label='Slaptažodis')
+    password2 = forms.CharField(widget=forms.PasswordInput, label='Pakartokite slaptažodį')
     terms = forms.BooleanField(
         required=True,
         label=mark_safe('Sutinku su <a href="/terms-and-conditions/" target="_blank" class="font-bold text-blue-600 hover:underline">taisyklėmis ir sąlygomis</a>'),
