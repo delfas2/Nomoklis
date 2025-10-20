@@ -1,4 +1,7 @@
 <div class="w-full max-w-4xl bg-white rounded-lg shadow-2xl flex flex-col max-h-[90vh]">
+    <button class="close-modal-btn absolute top-3 right-3 text-gray-400 hover:text-gray-600 z-10">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+    </button>
     <div class="flex flex-col md:flex-row p-6 space-x-0 md:space-x-6">
         <div class="w-full md:w-1/2">
             <div x-data="{ mainImage: '{{ property.images.first.image.url|default:"https://placehold.co/600x400/e2e8f0/64748b?text=Nėra+nuotraukos" }}' }">
@@ -11,7 +14,7 @@
             </div>
         </div>
         <div class="w-full md:w-1/2 mt-4 md:mt-0">
-                <h2 class="text-3xl font-bold text-gray-800">{{ property.street }}</h2>
+                <h2 class="text-3xl font-bold text-gray-800">{{ property.street }} {{ property.house_number }}</h2>
                 <p class="text-lg text-gray-600 mb-4">{{ property.district }}, {{ property.city }}</p>           <div class="mb-4">
                 <p class="text-3xl font-bold text-blue-600">{{ property.rent_price|floatformat:"0" }} €<span class="text-lg font-normal text-gray-500">/mėn.</span></p>
                 {% if property.deposit %}
