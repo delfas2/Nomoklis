@@ -1805,7 +1805,7 @@ def property_locations_api(request):
         prop_data = {
             'lat': float(prop.latitude),
             'lon': float(prop.longitude),
-            'title': f"{prop.street}, {prop.city}",
+            'title': f"{prop.street} {prop.house_number}, {prop.city}",
             'price': f"{prop.rent_price} €/mėn.",
             'popup_url': reverse('property_detail_view', args=[prop.id]),
             # --- PRIDĖTI LAUKAI ---

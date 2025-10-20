@@ -93,7 +93,7 @@
                         <img class="w-1/3 h-40 object-cover" src="{% if property.images.first %}{{ property.images.first.image.url }}{% else %}https://placehold.co/400x300/d1d5db/333333?text=Nėra+nuotraukos{% endif %}" alt="{{ property.street }}">
                         <div class="p-4 flex-1">
                             <p class="font-bold text-lg text-gray-800">{{ property.rent_price|floatformat:"0" }} €/mėn.</p>
-                            <p class="text-md text-gray-700 mt-1 font-semibold truncate">{{ property.street }}, {{ property.city }}</p>
+                            <p class="text-md text-gray-700 mt-1 font-semibold truncate">{{ property.street }} {{ property.house_number }}, {{ property.city }}</p>
                             <p class="text-sm text-gray-500 mt-2">{{ property.rooms }} kamb. &bull; {{ property.area|floatformat:"0" }} m² &bull; {{ property.floor }}/{{ property.total_floors }} aukštas</p>
                             <button data-url="{% url 'property_detail_view' property.id %}" class="show-details-btn mt-2 text-sm font-semibold text-blue-600 hover:underline">Daugiau informacijos</button>
                         </div>
