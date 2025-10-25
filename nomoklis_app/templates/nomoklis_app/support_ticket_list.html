@@ -3,53 +3,45 @@
 {% block title %}Mano užklausos{% endblock %}
 
 {% block content %}
-<div class="flex-1 flex flex-col overflow-hidden">
-    <!-- {% include 'nomoklis_app/_header.html' %} -->
+<div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold text-gray-800">Mano pagalbos užklausos</h1>
+    <a href="{% url 'create_support_ticket' %}" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300">Sukurti naują</a>
+</div>
 
-    <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100">
-        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-            <div class="flex justify-between items-center mb-6">
-                <h1 class="text-2xl font-bold text-gray-800">Mano pagalbos užklausos</h1>
-                <a href="{% url 'create_support_ticket' %}" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300">Sukurti naują</a>
-            </div>
-
-            <div class="bg-white rounded-lg shadow-md overflow-hidden">
-                <ul class="divide-y divide-gray-200">
-                    {% for ticket in tickets %}
-                    <li class="p-4 hover:bg-gray-50">
-                        <a href="{% url 'support_ticket_detail' ticket.id %}" class="block">
-                            <div class="flex items-center justify-between">
-                                <p class="text-sm font-medium text-blue-600 truncate">{{ ticket.subject }}</p>
-                                <div class="ml-2 flex-shrink-0 flex">
-                                    {% if ticket.status == 'new' %}
-                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">Nauja</span>
-                                    {% elif ticket.status == 'in_progress' %}
-                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Vykdoma</span>
-                                    {% elif ticket.status == 'resolved' %}
-                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Išspręsta</span>
-                                    {% else %}
-                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">Uždaryta</span>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            <div class="mt-2 sm:flex sm:justify-between">
-                                <div class="sm:flex">
-                                    <p class="flex items-center text-sm text-gray-500">
-                                        Tipas: {{ ticket.get_ticket_type_display }}
-                                    </p>
-                                </div>
-                                <div class="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
-                                    <p>Sukurta: {{ ticket.created_at|date:"Y-m-d H:i" }}</p>
-                                </div>
-                            </div>
-                        </a>
-                    </li>
-                    {% empty %}
-                        <li class="p-6 text-center text-gray-500">Jūs neturite jokių pagalbos užklausų.</li>
-                    {% endfor %}
-                </ul>
-            </div>
-        </div>
-    </main>
+<div class="bg-white rounded-lg shadow-md overflow-hidden">
+    <ul class="divide-y divide-gray-200">
+        {% for ticket in tickets %}
+        <li class="p-4 hover:bg-gray-50">
+            <a href="{% url 'support_ticket_detail' ticket.id %}" class="block">
+                <div class="flex items-center justify-between">
+                    <p class="text-sm font-medium text-blue-600 truncate">{{ ticket.subject }}</p>
+                    <div class="ml-2 flex-shrink-0 flex">
+                        {% if ticket.status == 'new' %}
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">Nauja</span>
+                        {% elif ticket.status == 'in_progress' %}
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Vykdoma</span>
+                        {% elif ticket.status == 'resolved' %}
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Išspręsta</span>
+                        {% else %}
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">Uždaryta</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="mt-2 sm:flex sm:justify-between">
+                    <div class="sm:flex">
+                        <p class="flex items-center text-sm text-gray-500">
+                            Tipas: {{ ticket.get_ticket_type_display }}
+                        </p>
+                    </div>
+                    <div class="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
+                        <p>Sukurta: {{ ticket.created_at|date:"Y-m-d H:i" }}</p>
+                    </div>
+                </div>
+            </a>
+        </li>
+        {% empty %}
+            <li class="p-6 text-center text-gray-500">Jūs neturite jokių pagalbos užklausų.</li>
+        {% endfor %}
+    </ul>
 </div>
 {% endblock %}

@@ -695,14 +695,13 @@ def property_search_view(request):
         'request': request,
         'saved_property_ids': saved_property_ids,
     }
-    
+
     if request.user.is_authenticated and hasattr(request.user, 'profile') and request.user.profile.user_type == 'nuomininkas':
         context['active_page'] = 'property_search'
-        # Pakeista, kad būtų naudojamas tas pats šablonas kaip ir viešai paieškai
-        # Pridedame 'base_template', kad būtų įkeltas teisingas meniu
         context['base_template'] = 'nomoklis_app/_tenant_base.html'
-    
-    return render(request, 'nomoklis_app/public_property_search.html', context)
+        return render(request, 'nomoklis_app/property_search.html', context)
+    else:
+        return render(request, 'nomoklis_app/public_property_search.html', context)
 
 def property_detail_view(request, property_id):
     prop = get_object_or_404(Property, id=property_id)
@@ -950,17 +949,28 @@ def report_problem_view(request):
     else: # GET metodas
         form = ProblemReportForm()
 
-    return render(request, 'nomoklis_app/report_problem.html', {'form': form, 'active_page': 'report_problem'})
+    context = {
+        'form': form, 
+        'active_page': 'report_problem',
+        'base_template': 'nomoklis_app/_tenant_base.html'
+    }
+    return render(request, 'nomoklis_app/report_problem.html', context)
 
 @login_required
 def problem_list_view(request):
     problems = ProblemReport.objects.filter(lease__tenant=request.user).order_by('-created_at')
-    return render(request, 'nomoklis_app/problem_list.html', {'problems': problems, 'active_page': 'report_problem'})
+    context = {
+        'problems': problems, 
+        'active_page': 'report_problem',
+        'base_template': 'nomoklis_app/_tenant_base.html'
+    }
+    return render(request, 'nomoklis_app/problem_list.html', context)
 
 @login_required
 def landlord_problem_list_view(request):
     problems = ProblemReport.objects.filter(lease__property__owner=request.user).order_by('-created_at')
-    return render(request, 'nomoklis_app/landlord_problem_list.html', {'problems': problems, 'active_page': 'problems_landlord'})
+    context = {'problems': problems, 'active_page': 'problems_landlord', 'base_template': 'nomoklis_app/_landlord_base.html'}
+    return render(request, 'nomoklis_app/landlord_problem_list.html', context)
 
 @login_required
 def landlord_problem_detail_view(request, problem_id):
@@ -988,12 +998,14 @@ def landlord_problem_detail_view(request, problem_id):
         # Formą užpildome esamomis problemos reikšmėmis
         form = LandlordProblemUpdateForm(instance=problem)
 
-    return render(request, 'nomoklis_app/landlord_problem_detail.html', {
+    context = {
         'problem': problem,
         'updates': updates,
         'form': form,
-        'active_page': 'problems_landlord'
-    })
+        'active_page': 'problems_landlord',
+        'base_template': 'nomoklis_app/_landlord_base.html'
+    }
+    return render(request, 'nomoklis_app/landlord_problem_detail.html', context)
 
 @login_required
 def tenant_problem_detail_view(request, problem_id):
@@ -1012,12 +1024,15 @@ def tenant_problem_detail_view(request, problem_id):
     else: # GET metodas
         form = TenantCommentForm()
 
-    return render(request, 'nomoklis_app/tenant_problem_detail.html', {
+    context = {
         'problem': problem,
         'updates': updates,
         'form': form,
-        'active_page': 'report_problem'
-    })
+        'active_page': 'report_problem',
+        'base_template': 'nomoklis_app/_tenant_base.html'
+    }
+
+    return render(request, 'nomoklis_app/tenant_problem_detail.html', context)
 
 @receiver(post_save, sender=ProblemReport)
 def create_problem_notification(sender, instance, created, **kwargs):
