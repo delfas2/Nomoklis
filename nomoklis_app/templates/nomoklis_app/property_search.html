@@ -14,10 +14,12 @@
     </style>
 {% endblock %}
 
-{% block container_class %}h-full w-full p-0{% endblock %}
+{% block main_class %}bg-white{% endblock %}
+{% block container_class %}p-0 max-w-full h-full{% endblock %}
 
 {% block content %}
-<div class="w-full h-full flex flex-col bg-white">
+<div class="w-full h-full flex flex-col">
+    {# Headeris dabar yra čia, o ne baziniame šablone, nes šio puslapio struktūra kitokia #}
     <div class="p-4 border-b flex-shrink-0" x-data="{ openDropdown: null }">
             <div class="flex items-center gap-2">
                 <form method="get" action="{% url 'property_search' %}" class="w-full flex items-center border border-gray-300 rounded-full shadow-sm">
