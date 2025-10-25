@@ -1,60 +1,47 @@
-<!DOCTYPE html>
-<html lang="lt">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Problemų sąrašas</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <style>
-        body { font-family: 'Inter', sans-serif; }
-        .sidebar-active { background-color: #eff6ff; color: #1d4ed8; font-weight: 600; }
-    </style>
-</head>
-<body class="bg-gray-100">
-    <div class="flex h-screen bg-gray-100">
-        {% include 'nomoklis_app/_tenant_sidebar.html' %}
+{% extends base_template %}
 
-        <div class="flex-1 flex flex-col overflow-hidden">
-            {% include 'nomoklis_app/_header.html' %}
+{% block title %}Mano gedimai{% endblock %}
 
-            <main class="flex-1 overflow-x-hidden overflow-y-auto">
-                <div class="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
-                    <div class="flex justify-between items-center mb-6">
-                        <h1 class="text-2xl font-bold text-gray-800">Jūsų registruotos problemos</h1>
-                        <a href="{% url 'report_problem' %}" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700">Registruoti naują</a>
-                    </div>
+{% block content %}
+    <div class="max-w-4xl mx-auto">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold text-gray-800">Mano užregistruoti gedimai</h1>
+            <a href="{% url 'report_problem' %}" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300">Registruoti naują</a>
+        </div>
 
-                    <div class="bg-white rounded-lg shadow-md overflow-hidden">
-                        <ul class="divide-y divide-gray-200">
-                            {% for problem in problems %}
-                            <li class="p-4 sm:p-6">
-                                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between">
-                                    <div>
-                                        <p class="text-sm text-gray-500">{{ problem.created_at|date:"Y-m-d H:i" }}</p>
-                                        <h2 class="font-bold text-lg text-gray-800">{{ problem.get_problem_type_display }}</h2>
-                                        <p class="text-sm text-gray-600 mt-1 truncate">{{ problem.description|truncatewords:20 }}</p>
-                                    </div>
-                                    <div class="flex items-center space-x-4 mt-4 sm:mt-0">
-                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                            {% if problem.status == 'nauja' %}bg-blue-100 text-blue-800
-                                            {% elif problem.status == 'vykdoma' %}bg-yellow-100 text-yellow-800
-                                            {% else %}bg-green-100 text-green-800{% endif %}">
-                                            {{ problem.get_status_display }}
-                                        </span>
-                                        <a href="{% url 'tenant_problem_detail' problem.id %}" class="text-sm font-semibold text-blue-600 hover:underline">Peržiūrėti</a>
-                                    </div>
-                                </div>
-                            </li>
-                            {% empty %}
-                            <li class="p-6 text-center text-gray-500">Jūs dar neregistravote jokių problemų.</li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                </div>
-            </main>
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <ul class="divide-y divide-gray-200">
+                {% for problem in problems %}
+                <li class="p-4 hover:bg-gray-50">
+                    <a href="{% url 'tenant_problem_detail' problem.id %}" class="block">
+                        <div class="flex items-center justify-between">
+                            <p class="text-sm font-medium text-blue-600 truncate">{{ problem.lease.property.street }} - {{ problem.get_problem_type_display }}</p>
+                            <div class="ml-2 flex-shrink-0 flex">
+                                {% if problem.status == 'nauja' %}
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">Nauja</span>
+                                {% elif problem.status == 'vykdoma' %}
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Vykdoma</span>
+                                {% else %}
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Išspręsta</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="mt-2 sm:flex sm:justify-between">
+                            <div class="sm:flex">
+                                <p class="flex items-center text-sm text-gray-500">
+                                    {{ problem.description|truncatewords:20 }}
+                                </p>
+                            </div>
+                            <div class="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
+                                <p>Sukurta: {{ problem.created_at|date:"Y-m-d H:i" }}</p>
+                            </div>
+                        </div>
+                    </a>
+                </li>
+                {% empty %}
+                    <li class="p-6 text-center text-gray-500">Jūs neturite jokių užregistruotų gedimų.</li>
+                {% endfor %}
+            </ul>
         </div>
     </div>
-</body>
-</html>
+{% endblock %}

@@ -1,197 +1,176 @@
-<!DOCTYPE html>
-<html lang="lt">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nuomininko Skydelis</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <style>
-        body { font-family: 'Inter', sans-serif; }
-        .sidebar-active { background-color: #eff6ff; color: #1d4ed8; font-weight: 600; }
-        #modal-backdrop.hidden { display: none; }
-    </style>
-</head>
-<body class="bg-gray-100">
+{% extends "nomoklis_app/_tenant_base.html" %}
 
-    <div class="flex h-screen bg-gray-100">
-        {% include 'nomoklis_app/_tenant_sidebar.html' %}
+{% block title %}Nuomininko Skydelis{% endblock %}
 
-        <div class="flex-1 flex flex-col overflow-hidden">
-            {% include 'nomoklis_app/_header.html' %}
-
-            <main class="flex-1 overflow-x-hidden overflow-y-auto">
-                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-
-                    {% if messages %}
-                        {% for message in messages %}
-                        <div class="mb-4 p-4 rounded-md {% if message.tags == 'success' %} bg-green-100 text-green-800 {% elif message.tags == 'error' %} bg-red-100 text-red-800 {% else %} bg-blue-100 text-blue-800 {% endif %}" role="alert">
-                            {{ message }}
-                        </div>
-                        {% endfor %}
-                    {% endif %}
-                    
-                    {% if sent_requests %}
-                    <section id="sent-requests" class="mb-10">
-                        <h2 class="text-xl font-semibold text-gray-700 mb-4">Išsiųstos nuomos užklausos</h2>
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {% for req in sent_requests %}
-                            <div class="bg-white rounded-lg shadow-md overflow-hidden">
-                                <img src="{{ req.property.images.first.image.url|default:'https://placehold.co/400x250/a0aec0/ffffff?text=Nėra+nuotraukos' }}" alt="{{ req.property.street }}" class="w-full h-48 object-cover">
-                                <div class="p-4">
-                                    <h3 class="font-bold text-lg text-gray-800">{{ req.property.street }}</h3>
-                                    <p class="text-sm text-gray-600 mb-4">Laukiama nuomotojo atsakymo</p>
-                                    <button data-url="{% url 'tenant_request_popup' req.id %}" class="open-tenant-request-btn w-full text-center bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-gray-700">
-                                        Peržiūrėti
-                                    </button>
-                                </div>
-                            </div>
-                            {% endfor %}
-                        </div>
-                    </section>
-                    {% endif %}
-
-                    <section id="active-lease">
-                        <h2 class="text-xl font-semibold text-gray-700 mb-4">Mano nuoma</h2>
-                        {% if active_lease %}
-                        <div class="bg-white p-6 rounded-lg shadow-md">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div>
-                                    <img src="{{ active_lease.property.images.first.image.url|default:'https://placehold.co/400x250/a0aec0/ffffff?text=Nėra+nuotraukos' }}" alt="{{ active_lease.property.street }}" class="w-full h-56 object-cover rounded-lg">
-                                </div>
-                                <div class="space-y-4">
-                                    <h3 class="text-2xl font-bold text-gray-800">{{ active_lease.property }}</h3>
-                                    <p class="text-md text-gray-600">Nuomotojas: {{ active_lease.property.owner.get_full_name }}</p>
-                                    <div class="border-t border-gray-200 pt-4 space-y-3 text-sm">
-                                        <div class="flex justify-between">
-                                            <span class="text-gray-600">Sutarties pradžia:</span>
-                                            <span class="font-semibold text-gray-800">{{ active_lease.start_date }}</span>
-                                        </div>
-                                        <div class="flex justify-between">
-                                            <span class="text-gray-600">Mėnesio įmoka:</span>
-                                            <span class="font-semibold text-green-600 text-lg">{{ active_lease.rent_price|floatformat:"0" }} €</span>
-                                        </div>
-                                        <div class="flex justify-between">
-                                            <span class="text-gray-600">Mokėjimo diena:</span>
-                                            <span class="font-semibold text-gray-800">Kiekvieno mėn. 20 d.</span>
-                                        </div>
-                                        
-                                        {% if unpaid_invoice %}
-                                            <div class="bg-red-50 border border-red-200 p-4 rounded-lg">
-                                                <div class="flex items-center justify-between">
-                                                    <div>
-                                                        <p class="font-semibold text-red-800">Reikia apmokėti sąskaitą</p>
-                                                        <p class="text-2xl font-bold text-red-900">{{ unpaid_invoice.amount|floatformat:"2" }} €</p>
-                                                    </div>
-                                                    <a href="{% url 'lease_invoices' active_lease.id %}" class="bg-red-600 text-white font-semibold py-2 px-5 rounded-lg hover:bg-red-700 transition">
-                                                        Mokėti
-                                                    </a>
-                                                </div>
-                                            </div>
-                                        {% elif next_payment_date %}
-                                            <div class="flex justify-between items-center bg-gray-50 p-3 rounded-md">
-                                                <span class="text-gray-600 font-medium">Sekantis mokėjimas:</span>
-                                                <span class="font-bold text-blue-600 text-lg">{{ next_payment_date|date:"Y-m-d" }}</span>
-                                            </div>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="mt-6 flex flex-wrap gap-3">
-                                <a href="{% url 'lease_invoices' active_lease.id %}" class="flex-grow text-center bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-600">Sąskaitos</a>
-                                
-                                {% if active_lease.utilities_paid_by == 'landlord' %}
-                                <a href="{% url 'submit_meter_readings' active_lease.id %}" class="flex-grow text-center bg-teal-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-teal-600">Siųsti skaitiklių rodmenis</a>
-                                {% endif %}
-
-                                <a href="{% url 'report_problem' %}" class="flex-grow text-center bg-yellow-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-yellow-600">Registruoti problemą</a>
-                                <button data-url="{% url 'tenant_terminate_lease' active_lease.id %}" class="tenant-terminate-btn flex-grow text-center bg-red-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-600">Nutraukti sutartį</button>
-                            </div>
-                        </div>
-                        {% else %}
-                        <div class="text-center bg-white p-10 rounded-lg shadow-md">
-                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" /></svg>
-                            <h3 class="mt-2 text-sm font-medium text-gray-900">Aktyvios nuomos sutarties nėra</h3>
-                            <p class="mt-1 text-sm text-gray-500">Čia matysite informaciją, kai išsinuomosite būstą.</p>
-                            <div class="mt-6">
-                                <a href="{% url 'property_search' %}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                                    <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" /></svg>
-                                    Ieškoti būsto
-                                </a>
-                            </div>
-                        </div>
-                        {% endif %}
-                    </section>
-                    
-                    {% if pending_leases %}
-                    <section id="pending-leases" class="mt-10">
-                        <h2 class="text-xl font-semibold text-gray-700 mb-4">Gauti nuomos pasiūlymai</h2>
-                        <div class="bg-white rounded-lg shadow-md overflow-hidden">
-                            <ul class="divide-y divide-gray-200">
-                                {% for lease in pending_leases %}
-                                <li class="p-4 sm:p-6">
-                                    <div class="flex items-center justify-between flex-wrap">
-                                        <div>
-                                            <p class="text-sm font-medium text-blue-600 truncate">{{ lease.property.street }}, {{ lease.property.city }}</p>
-                                            <p class="mt-1 text-sm text-gray-500">Nuomos kaina: {{ lease.rent_price|floatformat:"0" }} €/mėn</p>
-                                        </div>
-                                        <div class="mt-2 sm:mt-0 flex space-x-3">
-                                            <a href="{% url 'confirm_lease' lease.id %}" class="px-3 py-1.5 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700">Patvirtinti</a>
-                                            <a href="{% url 'reject_lease' lease.id %}" class="px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">Atmesti</a>
-                                        </div>
-                                    </div>
-                                </li>
-                                {% endfor %}
-                            </ul>
-                        </div>
-                    </section>
-                    {% endif %}
-
-                    {% if leases_to_review or archived_leases_count > 0 %}
-                    <section id="past-leases" class="mt-10">
-                        <h2 class="text-xl font-semibold text-gray-700 mb-4">Nuomos istorija</h2>
-                        <div class="bg-white rounded-lg shadow-md overflow-hidden">
-                            <ul class="divide-y divide-gray-200">
-                                {% for lease in leases_to_review %}
-                                <li class="p-4 sm:p-6">
-                                     <div class="flex items-center justify-between flex-wrap">
-                                        <div>
-                                            <p class="text-sm font-medium text-gray-800 truncate">{{ lease.property.street }}, {{ lease.property.city }}</p>
-                                            <p class="mt-1 text-sm text-gray-500">Nuoma baigėsi: {{ lease.end_date|date:"Y-m-d" }}</p>
-                                        </div>
-                                        <div class="mt-2 sm:mt-0">
-                                            <button data-url="{% url 'add_property_review' lease.id %}" class="add-review-btn px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">Palikti atsiliepimą</button>
-                                        </div>
-                                    </div>
-                                </li>
-                                {% empty %}
-                                    {% if not archived_leases_count > 0 %}
-                                    <li class="p-4 text-center text-sm text-gray-500">Nuomos istorijos kol kas nėra.</li>
-                                    {% endif %}
-                                {% endfor %}
-                            </ul>
-                        </div>
-                        {% if archived_leases_count > 0 %}
-                        <div class="mt-4 text-center">
-                            <a href="{% url 'tenant_lease_archive' %}" class="text-sm font-medium text-blue-600 hover:text-blue-800">
-                                Peržiūrėti sutarčių archyvą ({{ archived_leases_count }})
-                            </a>
-                        </div>
-                        {% endif %}
-                    </section>
-                    {% endif %}
-                </div>
-            </main>
+{% block content %}
+    {% if messages %}
+        {% for message in messages %}
+        <div class="mb-4 p-4 rounded-md {% if message.tags == 'success' %} bg-green-100 text-green-800 {% elif message.tags == 'error' %} bg-red-100 text-red-800 {% else %} bg-blue-100 text-blue-800 {% endif %}" role="alert">
+            {{ message }}
         </div>
-    </div>
+        {% endfor %}
+    {% endif %}
 
+    {% if sent_requests %}
+    <section id="sent-requests" class="mb-10">
+        <h2 class="text-xl font-semibold text-gray-700 mb-4">Išsiųstos nuomos užklausos</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for req in sent_requests %}
+            <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                <img src="{{ req.property.images.first.image.url|default:'https://placehold.co/400x250/a0aec0/ffffff?text=Nėra+nuotraukos' }}" alt="{{ req.property.street }}" class="w-full h-48 object-cover">
+                <div class="p-4">
+                    <h3 class="font-bold text-lg text-gray-800">{{ req.property.street }}</h3>
+                    <p class="text-sm text-gray-600 mb-4">Laukiama nuomotojo atsakymo</p>
+                    <button data-url="{% url 'tenant_request_popup' req.id %}" class="open-tenant-request-btn w-full text-center bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-gray-700">
+                        Peržiūrėti
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    <section id="active-lease">
+        <h2 class="text-xl font-semibold text-gray-700 mb-4">Mano nuoma</h2>
+        {% if active_lease %}
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <img src="{{ active_lease.property.images.first.image.url|default:'https://placehold.co/400x250/a0aec0/ffffff?text=Nėra+nuotraukos' }}" alt="{{ active_lease.property.street }}" class="w-full h-56 object-cover rounded-lg">
+                </div>
+                <div class="space-y-4">
+                    <h3 class="text-2xl font-bold text-gray-800">{{ active_lease.property }}</h3>
+                    <p class="text-md text-gray-600">Nuomotojas: {{ active_lease.property.owner.get_full_name }}</p>
+                    <div class="border-t border-gray-200 pt-4 space-y-3 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Sutarties pradžia:</span>
+                            <span class="font-semibold text-gray-800">{{ active_lease.start_date }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Mėnesio įmoka:</span>
+                            <span class="font-semibold text-green-600 text-lg">{{ active_lease.rent_price|floatformat:"0" }} €</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Mokėjimo diena:</span>
+                            <span class="font-semibold text-gray-800">Kiekvieno mėn. 20 d.</span>
+                        </div>
+                        
+                        {% if unpaid_invoice %}
+                            <div class="bg-red-50 border border-red-200 p-4 rounded-lg">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="font-semibold text-red-800">Reikia apmokėti sąskaitą</p>
+                                        <p class="text-2xl font-bold text-red-900">{{ unpaid_invoice.amount|floatformat:"2" }} €</p>
+                                    </div>
+                                    <a href="{% url 'lease_invoices' active_lease.id %}" class="bg-red-600 text-white font-semibold py-2 px-5 rounded-lg hover:bg-red-700 transition">
+                                        Mokėti
+                                    </a>
+                                </div>
+                            </div>
+                        {% elif next_payment_date %}
+                            <div class="flex justify-between items-center bg-gray-50 p-3 rounded-md">
+                                <span class="text-gray-600 font-medium">Sekantis mokėjimas:</span>
+                                <span class="font-bold text-blue-600 text-lg">{{ next_payment_date|date:"Y-m-d" }}</span>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="mt-6 flex flex-wrap gap-3">
+                <a href="{% url 'lease_invoices' active_lease.id %}" class="flex-grow text-center bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-600">Sąskaitos</a>
+                
+                {% if active_lease.utilities_paid_by == 'landlord' %}
+                <a href="{% url 'submit_meter_readings' active_lease.id %}" class="flex-grow text-center bg-teal-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-teal-600">Siųsti skaitiklių rodmenis</a>
+                {% endif %}
+
+                <a href="{% url 'report_problem' %}" class="flex-grow text-center bg-yellow-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-yellow-600">Registruoti problemą</a>
+                <button data-url="{% url 'tenant_terminate_lease' active_lease.id %}" class="tenant-terminate-btn flex-grow text-center bg-red-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-600">Nutraukti sutartį</button>
+            </div>
+        </div>
+        {% else %}
+        <div class="text-center bg-white p-10 rounded-lg shadow-md">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" /></svg>
+            <h3 class="mt-2 text-sm font-medium text-gray-900">Aktyvios nuomos sutarties nėra</h3>
+            <p class="mt-1 text-sm text-gray-500">Čia matysite informaciją, kai išsinuomosite būstą.</p>
+            <div class="mt-6">
+                <a href="{% url 'property_search' %}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" /></svg>
+                    Ieškoti būsto
+                </a>
+            </div>
+        </div>
+        {% endif %}
+    </section>
+    
+    {% if pending_leases %}
+    <section id="pending-leases" class="mt-10">
+        <h2 class="text-xl font-semibold text-gray-700 mb-4">Gauti nuomos pasiūlymai</h2>
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <ul class="divide-y divide-gray-200">
+                {% for lease in pending_leases %}
+                <li class="p-4 sm:p-6">
+                    <div class="flex items-center justify-between flex-wrap">
+                        <div>
+                            <p class="text-sm font-medium text-blue-600 truncate">{{ lease.property.street }}, {{ lease.property.city }}</p>
+                            <p class="mt-1 text-sm text-gray-500">Nuomos kaina: {{ lease.rent_price|floatformat:"0" }} €/mėn</p>
+                        </div>
+                        <div class="mt-2 sm:mt-0 flex space-x-3">
+                            <a href="{% url 'confirm_lease' lease.id %}" class="px-3 py-1.5 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700">Patvirtinti</a>
+                            <a href="{% url 'reject_lease' lease.id %}" class="px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">Atmesti</a>
+                        </div>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </section>
+    {% endif %}
+
+    {% if leases_to_review or archived_leases_count > 0 %}
+    <section id="past-leases" class="mt-10">
+        <h2 class="text-xl font-semibold text-gray-700 mb-4">Nuomos istorija</h2>
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <ul class="divide-y divide-gray-200">
+                {% for lease in leases_to_review %}
+                <li class="p-4 sm:p-6">
+                        <div class="flex items-center justify-between flex-wrap">
+                        <div>
+                            <p class="text-sm font-medium text-gray-800 truncate">{{ lease.property.street }}, {{ lease.property.city }}</p>
+                            <p class="mt-1 text-sm text-gray-500">Nuoma baigėsi: {{ lease.end_date|date:"Y-m-d" }}</p>
+                        </div>
+                        <div class="mt-2 sm:mt-0">
+                            <button data-url="{% url 'add_property_review' lease.id %}" class="add-review-btn px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">Palikti atsiliepimą</button>
+                        </div>
+                    </div>
+                </li>
+                {% empty %}
+                    {% if not archived_leases_count > 0 %}
+                    <li class="p-4 text-center text-sm text-gray-500">Nuomos istorijos kol kas nėra.</li>
+                    {% endif %}
+                {% endfor %}
+            </ul>
+        </div>
+        {% if archived_leases_count > 0 %}
+        <div class="mt-4 text-center">
+            <a href="{% url 'tenant_lease_archive' %}" class="text-sm font-medium text-blue-600 hover:text-blue-800">
+                Peržiūrėti sutarčių archyvą ({{ archived_leases_count }})
+            </a>
+        </div>
+        {% endif %}
+    </section>
+    {% endif %}
+{% endblock %}
+
+{% block modals %}
     <div id="modal-backdrop" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
         <div id="modal-content" class="w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden">
         </div>
     </div>
+{% endblock %}
 
-    <script>
+{% block extra_js %}
+<script>
     document.addEventListener('DOMContentLoaded', function() {
         const modalBackdrop = document.getElementById('modal-backdrop');
         const modalContent = document.getElementById('modal-content');
@@ -223,6 +202,5 @@
             }
         });
     });
-    </script>
-</body>
-</html>
+</script>
+{% endblock %}
