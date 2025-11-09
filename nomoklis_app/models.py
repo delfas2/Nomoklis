@@ -263,7 +263,7 @@ class RentalRequest(models.Model):
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
     created_at = models.DateTimeField(auto_now_add=True)
 
-    start_date = models.DateField(verbose_name="Norima nuomos pradžia", null=True, blank=True)
+    start_date = models.DateField(verbose_name="Norima nuomos pradžia")
     end_date = models.DateField(verbose_name="Norima nuomos pabaiga", null=True, blank=True)
     offered_price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Siūloma kaina (€/mėn.)", null=True, blank=True)
     message = models.TextField(verbose_name="Žinutė nuomotojui", null=True, blank=True)
