@@ -1,71 +1,103 @@
-<!DOCTYPE html>
-<html lang="lt">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Redaguoti Profilį</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <style>
-        body { font-family: 'Inter', sans-serif; }
-        .sidebar-active { background-color: #eff6ff; color: #1d4ed8; font-weight: 600; }
-    </style>
-</head>
-<body class="bg-gray-100">
-    <div class="flex h-screen bg-gray-100">
-        {% include 'nomoklis_app/_tenant_sidebar.html' %}
-        <div class="flex-1 flex flex-col overflow-hidden">
-            {% include 'nomoklis_app/_header.html' %}
-            
-            <main class="flex-1 overflow-x-hidden overflow-y-auto">
-                <div class="max-w-3xl mx-auto p-4 sm:p-6 lg:p-8 w-full">
-                    <form method="post" enctype="multipart/form-data">
-                        {% csrf_token %}
-                        <div class="bg-white p-8 rounded-lg shadow-md">
-                            <h2 class="text-2xl font-bold text-gray-800 mb-6">Redaguoti Profilio Informaciją</h2>
-                            <div class="space-y-6">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700">{{ user_form.first_name.label }}</label>
-                                    {{ user_form.first_name }}
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700">{{ user_form.last_name.label }}</label>
-                                    {{ user_form.last_name }}
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700">{{ user_form.email.label }}</label>
-                                    {{ user_form.email }}
-                                </div>
-                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700">{{ profile_form.city.label }}</label>
-                                    {{ profile_form.city }}
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700">{{ profile_form.about_me.label }}</label>
-                                    {{ profile_form.about_me }}
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700">{{ profile_form.profile_image.label }}</label>
-                                    <img class="w-24 h-24 rounded-full object-cover my-2" src="{{ user.profile.profile_image.url }}">
-                                    {{ profile_form.profile_image }}
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700">Slaptažodis</label>
-                                    <div class="mt-1">
-                                        <a href="{% url 'change_password' %}" class="text-blue-600 hover:underline">Keisti slaptažodį</a>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="mt-8 flex justify-end gap-4 border-t border-gray-200 pt-6">
-                                <a href="{% url 'tenant_profile' %}" class="bg-gray-200 text-gray-800 font-semibold py-2 px-5 rounded-lg hover:bg-gray-300">Atšaukti</a>
-                                <button type="submit" class="bg-blue-600 text-white font-semibold py-2 px-5 rounded-lg hover:bg-blue-700">Išsaugoti</button>
-                            </div>
-                        </div>
-                    </form>
+{% extends 'nomoklis_app/_tenant_base.html' %}
+{% load i18n %}
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-6">{% trans "Redaguoti profilį" %}</h1>
+    
+    <form method="post" enctype="multipart/form-data" class="bg-white shadow-lg rounded-lg p-8">
+        {% csrf_token %}
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <!-- Kairysis stulpelis profilio nuotraukai -->
+            <div class="md:col-span-1 flex flex-col items-center">
+                <h3 class="text-xl font-semibold mb-4 text-gray-700">{% trans "Profilio nuotrauka" %}</h3>
+                {% if profile.profile_picture %}
+                    <img src="{{ profile.profile_picture.url }}" alt="{% trans 'Profilio nuotrauka' %}" class="w-40 h-40 rounded-full mb-4 object-cover shadow-md">
+                {% else %}
+                    <div class="w-40 h-40 rounded-full mb-4 bg-gray-200 flex items-center justify-center text-gray-500 text-5xl shadow-md">
+                        {{ user.first_name|first|upper }}{{ user.last_name|first|upper }}
+                    </div>
+                {% endif %}
+                <label class="block">
+                    <span class="sr-only">{% trans "Pasirinkti nuotrauką" %}</span>
+                    <input type="file" name="{{ profile_form.profile_picture.name }}" id="{{ profile_form.profile_picture.id_for_label }}" class="block w-full text-sm text-gray-500
+                      file:mr-4 file:py-2 file:px-4
+                      file:rounded-full file:border-0
+                      file:text-sm file:font-semibold
+                      file:bg-blue-50 file:text-blue-700
+                      hover:file:bg-blue-100
+                    "/>
+                </label>
+                {% if profile_form.profile_picture.errors %}
+                    <p class="text-red-500 text-xs italic mt-1">{{ profile_form.profile_picture.errors|first }}</p>
+                {% endif %}
+            </div>
+
+            <!-- Dešinysis stulpelis informacijai -->
+            <div class="md:col-span-2">
+                <h3 class="text-xl font-semibold mb-4 text-gray-700">{% trans "Asmeninė informacija" %}</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="{{ user_form.first_name.id_for_label }}" class="block text-sm font-medium text-gray-700">{% trans "Vardas" %}</label>
+                        <input type="text" name="{{ user_form.first_name.name }}" id="{{ user_form.first_name.id_for_label }}" value="{{ user_form.first_name.value|default:'' }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                        {% if user_form.first_name.errors %}
+                            <p class="text-red-500 text-xs italic mt-1">{{ user_form.first_name.errors|first }}</p>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label for="{{ user_form.last_name.id_for_label }}" class="block text-sm font-medium text-gray-700">{% trans "Pavardė" %}</label>
+                        <input type="text" name="{{ user_form.last_name.name }}" id="{{ user_form.last_name.id_for_label }}" value="{{ user_form.last_name.value|default:'' }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                        {% if user_form.last_name.errors %}
+                            <p class="text-red-500 text-xs italic mt-1">{{ user_form.last_name.errors|first }}</p>
+                        {% endif %}
+                    </div>
                 </div>
-            </main>
+
+                <div class="mt-6">
+                    <label for="{{ user_form.email.id_for_label }}" class="block text-sm font-medium text-gray-700">{% trans "El. paštas" %}</label>
+                    <input type="email" name="{{ user_form.email.name }}" id="{{ user_form.email.id_for_label }}" value="{{ user_form.email.value|default:'' }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                    {% if user_form.email.errors %}
+                        <p class="text-red-500 text-xs italic mt-1">{{ user_form.email.errors|first }}</p>
+                    {% endif %}
+                </div>
+                
+                <hr class="my-8">
+
+                <h3 class="text-xl font-semibold mb-4 text-gray-700">{% trans "Kontaktinė informacija" %}</h3>
+                <div class="mt-6">
+                    <label for="{{ profile_form.phone_number.id_for_label }}" class="block text-sm font-medium text-gray-700">{% trans "Telefonas" %}</label>
+                    <input type="text" name="{{ profile_form.phone_number.name }}" id="{{ profile_form.phone_number.id_for_label }}" value="{{ profile_form.phone_number.value|default:'' }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                    {% if profile_form.phone_number.errors %}
+                        <p class="text-red-500 text-xs italic mt-1">{{ profile_form.phone_number.errors|first }}</p>
+                    {% endif %}
+                </div>
+                
+                <div class="mt-6">
+                    <label for="{{ profile_form.address.id_for_label }}" class="block text-sm font-medium text-gray-700">{% trans "Adresas" %}</label>
+                    <input type="text" name="{{ profile_form.address.name }}" id="{{ profile_form.address.id_for_label }}" value="{{ profile_form.address.value|default:'' }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                    {% if profile_form.address.errors %}
+                        <p class="text-red-500 text-xs italic mt-1">{{ profile_form.address.errors|first }}</p>
+                    {% endif %}
+                </div>
+
+                <div class="mt-6">
+                    <label for="{{ profile_form.bio.id_for_label }}" class="block text-sm font-medium text-gray-700">{% trans "Aprašymas" %}</label>
+                    <textarea name="{{ profile_form.bio.name }}" id="{{ profile_form.bio.id_for_label }}" rows="4" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">{{ profile_form.bio.value|default:'' }}</textarea>
+                    {% if profile_form.bio.errors %}
+                        <p class="text-red-500 text-xs italic mt-1">{{ profile_form.bio.errors|first }}</p>
+                    {% endif %}
+                </div>
+            </div>
         </div>
-    </div>
-</body>
-</html>
+
+        <div class="flex justify-end mt-10">
+            <a href="{% url 'tenant_profile' %}" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg mr-4">
+                {% trans "Atšaukti" %}
+            </a>
+            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg shadow-md transition duration-300 ease-in-out">
+                {% trans "Išsaugoti pakeitimus" %}
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
