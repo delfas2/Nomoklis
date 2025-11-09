@@ -149,7 +149,11 @@ def nuomotojas_dashboard(request):
 def nuomininkas_dashboard(request):
     active_lease = Lease.objects.filter(tenant=request.user, status='active').first()
     pending_leases = Lease.objects.filter(tenant=request.user, status='pending')
-    sent_requests = RentalRequest.objects.filter(tenant=request.user, status='pending').order_by('-created_at')
+    
+    # Pakeista: gauname ne tik laukiančias, bet ir archyvuotas užklausas
+    pending_requests = RentalRequest.objects.filter(tenant=request.user, status='pending').order_by('-created_at')
+    archived_requests = RentalRequest.objects.filter(tenant=request.user).exclude(status='pending').order_by('-created_at')
+
 
     # Gauname visas pasibaigusias sutartis
     past_leases_qs = Lease.objects.filter(
@@ -177,7 +181,8 @@ def nuomininkas_dashboard(request):
     context = {
         'active_lease': active_lease,
         'pending_leases': pending_leases,
-        'sent_requests': sent_requests,
+        'pending_requests': pending_requests,
+        'archived_requests': archived_requests,
         'leases_to_review': leases_to_review,
         'archived_leases_count': archived_leases_count,
         'unpaid_invoice': unpaid_invoice,
@@ -1108,6 +1113,14 @@ def mark_notification_as_read(request, notification_id):
     return redirect('notification_list')
 
 @login_required
+def tenant_request_popup_view(request, request_id):
+    rental_request = get_object_or_404(RentalRequest, id=request_id, tenant=request.user)
+    context = {
+        'req': rental_request
+    }
+    return render(request, 'nomoklis_app/_tenant_request_popup.html', context)
+
+@login_required
 def notifications_popup_view(request):
     notifications = Notification.objects.filter(recipient=request.user)[:5] # Paimame tik 5 naujausius
     return render(request, 'nomoklis_app/_notifications_popup.html', {'notifications': notifications})
@@ -1200,6 +1213,16 @@ def delete_rental_request_view(request, request_id):
     
     messages.success(request, 'Nuomos užklausa buvo sėkmingai ištrinta.')
     return redirect('rental_requests')
+
+@login_required
+def cancel_rental_request_view(request, request_id):
+    rental_request = get_object_or_404(RentalRequest, id=request_id, tenant=request.user)
+    if rental_request.status == 'pending':
+        rental_request.delete()
+        messages.success(request, f'Jūsų užklausa dėl "{rental_request.property}" buvo sėkmingai atšaukta.')
+    else:
+        messages.error(request, 'Šios užklausos atšaukti nebegalima.')
+    return redirect('nuomininkas_dashboard')
 
 def _generate_contract_text(rental_request, lease_details):
     """
@@ -1546,24 +1569,6 @@ def profile_redirect_view(request):
             return redirect('tenant_profile')
     # Jei profilis kažkodėl neegzistuoja, nukreipiame į pagrindinį puslapį
     return redirect('index')
-
-@login_required
-def tenant_request_popup_view(request, request_id):
-    rental_request = get_object_or_404(RentalRequest, id=request_id, tenant=request.user)
-    context = {
-        'req': rental_request
-    }
-    return render(request, 'nomoklis_app/_tenant_request_popup.html', context)
-
-@login_required
-def cancel_rental_request_view(request, request_id):
-    rental_request = get_object_or_404(RentalRequest, id=request_id, tenant=request.user)
-    if rental_request.status == 'pending':
-        rental_request.delete()
-        messages.success(request, f'Jūsų užklausa dėl "{rental_request.property}" buvo sėkmingai atšaukta.')
-    else:
-        messages.error(request, 'Šios užklausos atšaukti nebegalima.')
-    return redirect('nuomininkas_dashboard')
 
 @login_required
 def view_and_sign_contract(request, lease_id):

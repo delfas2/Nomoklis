@@ -11,11 +11,11 @@
         {% endfor %}
     {% endif %}
 
-    {% if sent_requests %}
+    {% if pending_requests %}
     <section id="sent-requests" class="mb-10">
         <h2 class="text-xl font-semibold text-gray-700 mb-4">Išsiųstos nuomos užklausos</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {% for req in sent_requests %}
+            {% for req in pending_requests %}
             <div class="bg-white rounded-lg shadow-md overflow-hidden">
                 <img src="{{ req.property.images.first.image.url|default:'https://placehold.co/400x250/a0aec0/ffffff?text=Nėra+nuotraukos' }}" alt="{{ req.property.street }}" class="w-full h-48 object-cover">
                 <div class="p-4">
@@ -127,7 +127,7 @@
     </section>
     {% endif %}
 
-    {% if leases_to_review or archived_leases_count > 0 %}
+    {% if leases_to_review or archived_leases_count > 0 or archived_requests %}
     <section id="past-leases" class="mt-10">
         <h2 class="text-xl font-semibold text-gray-700 mb-4">Nuomos istorija</h2>
         <div class="bg-white rounded-lg shadow-md overflow-hidden">
@@ -148,6 +148,27 @@
                     {% if not archived_leases_count > 0 %}
                     <li class="p-4 text-center text-sm text-gray-500">Nuomos istorijos kol kas nėra.</li>
                     {% endif %}
+                {% endfor %}
+                
+                {% for req in archived_requests %}
+                <li class="p-4 sm:p-6 opacity-70">
+                    <div class="flex items-center justify-between flex-wrap">
+                        <div>
+                            <p class="text-sm font-medium text-gray-800 truncate">{{ req.property.street }}</p>
+                            <p class="mt-1 text-sm text-gray-500">
+                                Užklausa 
+                                {% if req.status == 'accepted' %}
+                                    <span class="font-semibold text-green-600">priimta</span>
+                                {% elif req.status == 'rejected' %}
+                                    <span class="font-semibold text-red-600">atmesta</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="mt-2 sm:mt-0">
+                            <button data-url="{% url 'tenant_request_popup' req.id %}" class="open-tenant-request-btn px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">Peržiūrėti</button>
+                        </div>
+                    </div>
+                </li>
                 {% endfor %}
             </ul>
         </div>
@@ -196,7 +217,7 @@
         });
         
         modalBackdrop.addEventListener('click', function(event) {
-            if (event.target === modalBackdrop || event.target.matches('#cancel-popup') || event.target.matches('#cancel-terminate') || event.target.matches('#cancel-review')) {
+            if (event.target === modalBackdrop || event.target.closest('#cancel-popup') || event.target.closest('#cancel-terminate') || event.target.closest('#cancel-review')) {
                 modalBackdrop.classList.add('hidden');
                 modalContent.innerHTML = '';
             }
