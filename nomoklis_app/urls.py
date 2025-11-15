@@ -26,7 +26,7 @@ urlpatterns = [
     path('property/<int:property_id>/', views.property_detail_view, name='property_detail_view'),
     
     path('terminate_lease/<int:lease_id>/', views.terminate_lease_view, name='terminate_lease'),
-    path('add_review/<int:lease_id>/', views.add_property_review_view, name='add_property_review'),
+    # path('add_review/<int:lease_id>/', views.add_property_review_view, name='add_property_review'),
     path('submit_request/<int:property_id>/', views.submit_rental_request_view, name='submit_rental_request'),
     path('property/<int:property_id>/reviews/', views.property_reviews_view, name='property_reviews'),
     path('landlord/<int:landlord_id>/reviews/', views.landlord_reviews_view, name='landlord_reviews'),
@@ -57,7 +57,7 @@ urlpatterns = [
     path('request/<int:request_id>/popup/', views.rental_request_popup_view, name='rental_request_popup'),
     path('contracts/', views.landlord_contracts_page, name='contracts'),
     path('dashboard/profile/', views.profile_redirect_view, name='profile_redirect'),
-    path('login/', auth_views.LoginView.as_view(template_name='nomoklis_app/login.html'), name='login'),
+    # path('login/', auth_views.LoginView.as_view(template_name='nomoklis_app/login.html'), name='login'),
     # path('logout/', auth_views.LogoutView.as_view(next_page='index'), name='logout'),
     path('my_requests/<int:request_id>/popup/', views.tenant_request_popup_view, name='tenant_request_popup'),
     path('my_requests/<int:request_id>/cancel/', views.cancel_rental_request_view, name='cancel_rental_request'),
