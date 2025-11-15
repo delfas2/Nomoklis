@@ -48,6 +48,10 @@ MIDDLEWARE = [
     'allauth.account.middleware.AccountMiddleware',
 ]
 
+# Session settings
+SESSION_COOKIE_AGE = 900  # 15 minutes
+SESSION_SAVE_EVERY_REQUEST = True
+
 STORAGES = {
     "staticfiles": {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
