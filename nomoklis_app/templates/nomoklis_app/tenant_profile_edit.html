@@ -20,7 +20,7 @@
                 {% endif %}
                 <label class="block">
                     <span class="sr-only">{% trans "Pasirinkti nuotrauką" %}</span>
-                    <input type="file" name="{{ profile_form.profile_picture.name }}" id="{{ profile_form.profile_picture.id_for_label }}" class="block w-full text-sm text-gray-500
+                    <input type="file" name="{{ profile_form.profile_image.name }}" id="{{ profile_form.profile_image.id_for_label }}" class="block w-full text-sm text-gray-500
                       file:mr-4 file:py-2 file:px-4
                       file:rounded-full file:border-0
                       file:text-sm file:font-semibold
@@ -64,27 +64,20 @@
                 <hr class="my-8">
 
                 <h3 class="text-xl font-semibold mb-4 text-gray-700">{% trans "Kontaktinė informacija" %}</h3>
-                <div class="mt-6">
-                    <label for="{{ profile_form.phone_number.id_for_label }}" class="block text-sm font-medium text-gray-700">{% trans "Telefonas" %}</label>
-                    <input type="text" name="{{ profile_form.phone_number.name }}" id="{{ profile_form.phone_number.id_for_label }}" value="{{ profile_form.phone_number.value|default:'' }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
-                    {% if profile_form.phone_number.errors %}
-                        <p class="text-red-500 text-xs italic mt-1">{{ profile_form.phone_number.errors|first }}</p>
-                    {% endif %}
-                </div>
                 
                 <div class="mt-6">
-                    <label for="{{ profile_form.address.id_for_label }}" class="block text-sm font-medium text-gray-700">{% trans "Adresas" %}</label>
-                    <input type="text" name="{{ profile_form.address.name }}" id="{{ profile_form.address.id_for_label }}" value="{{ profile_form.address.value|default:'' }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
-                    {% if profile_form.address.errors %}
-                        <p class="text-red-500 text-xs italic mt-1">{{ profile_form.address.errors|first }}</p>
+                    <label for="{{ profile_form.city.id_for_label }}" class="block text-sm font-medium text-gray-700">{% trans "Miestas" %}</label>
+                    <input type="text" name="{{ profile_form.city.name }}" id="{{ profile_form.city.id_for_label }}" value="{{ profile_form.city.value|default:'' }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                    {% if profile_form.city.errors %}
+                        <p class="text-red-500 text-xs italic mt-1">{{ profile_form.city.errors|first }}</p>
                     {% endif %}
                 </div>
 
                 <div class="mt-6">
-                    <label for="{{ profile_form.bio.id_for_label }}" class="block text-sm font-medium text-gray-700">{% trans "Aprašymas" %}</label>
-                    <textarea name="{{ profile_form.bio.name }}" id="{{ profile_form.bio.id_for_label }}" rows="4" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">{{ profile_form.bio.value|default:'' }}</textarea>
-                    {% if profile_form.bio.errors %}
-                        <p class="text-red-500 text-xs italic mt-1">{{ profile_form.bio.errors|first }}</p>
+                    <label for="{{ profile_form.about_me.id_for_label }}" class="block text-sm font-medium text-gray-700">{% trans "Aprašymas" %}</label>
+                    <textarea name="{{ profile_form.about_me.name }}" id="{{ profile_form.about_me.id_for_label }}" rows="4" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">{{ profile_form.about_me.value|default:'' }}</textarea>
+                    {% if profile_form.about_me.errors %}
+                        <p class="text-red-500 text-xs italic mt-1">{{ profile_form.about_me.errors|first }}</p>
                     {% endif %}
                 </div>
             </div>
