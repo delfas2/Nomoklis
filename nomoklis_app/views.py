@@ -928,6 +928,26 @@ def landlord_preview_popup(request, landlord_id):
     }
     return render(request, 'nomoklis_app/_landlord_preview_popup.html', context)
 
+@login_required
+def add_property_review_view(request, lease_id):
+    lease = get_object_or_404(Lease, id=lease_id, tenant=request.user)
+    if request.method == 'POST':
+        form = PropertyReviewForm(request.POST)
+        if form.is_valid():
+            review = form.save(commit=False)
+            review.lease = lease
+            review.save()
+            messages.success(request, 'Atsiliepimas sėkmingai pateiktas!')
+            return redirect('nuomininkas_dashboard')
+    else:
+        form = PropertyReviewForm()
+    
+    context = {
+        'form': form,
+        'lease': lease
+    }
+    return render(request, 'nomoklis_app/_property_review_popup.html', context)
+
 # GALUTINIS PATAISYMAS: `report_problem_view` atnaujinta, kad veiktų su paprasta forma
 @login_required
 def report_problem_view(request):
@@ -1107,6 +1127,8 @@ def mark_notification_as_read(request, notification_id):
     elif isinstance(notification.content_object, RentalRequest):
         # Nukreipiame į naująjį sutarčių puslapį, nes užklausų puslapio nebėra
         return redirect('contracts')
+    elif isinstance(notification.content_object, Lease):
+        return redirect('view_and_sign_contract', lease_id=notification.object_id)
     # --- PABAIGA ---
     
     # Paliekame numatytąjį nukreipimą, jei pranešimas neturi susijusio objekto
@@ -1264,7 +1286,7 @@ GYVENAMŲJŲ PATALPŲ NUOMOS SUTARTIS
 
 1. SUTARTIES OBJEKTAS
 1.1. Šia sutartimi Nuomotojas suteikia Nuomininkui laikinai, nuomos terminui, naudotis ir valdyti už mokestį gyvenamąsias patalpas – butą, gyvenamosios paskirties, esantį adresu {buto_adresas}, kurio unikalus numeris {buto_unikalus_nr}, plotas {buto_plotas} kv.m. (toliau sutartyje - butas), o Nuomininkas įsipareigoja mokėti nuomos mokestį.
-1.2. Nuomininkas moka Nuomotojui už buto nuomą {nuomos_kaina:.2f} Eur (suma žodžiais).
+1.2. Nuomininkas moka Nuomotojui už buto nuomą {nuomos_kaina:.2f} Eur.
 1.3. Nuomininkas kiekvieną mėnesį moka Nuomotojui nuomos, buto komunalinių ir kitų paslaugų mokesčius, pagal pateiktas sąskaitas.
 
 2. MOKĖJIMŲ IR ATSISKAITYMŲ PAGAL SUTARTĮ TVARKA
@@ -1324,11 +1346,12 @@ def prepare_and_edit_contract_view(request, request_id):
             lease = Lease.objects.create(
                 property=rental_request.property,
                 tenant=rental_request.tenant,
-                status='active',
+                status='pending',
                 rent_price=rental_request.offered_price,
                 start_date=rental_request.start_date,
                 end_date=rental_request.end_date,
-                deposit_amount=form.cleaned_data['deposit_amount']
+                deposit_amount=form.cleaned_data['deposit_amount'],
+                is_signed_by_landlord=True  # Landlord signs by generating the contract
             )
 
             edited_contract_text = form.cleaned_data['contract_text']
@@ -1341,7 +1364,7 @@ def prepare_and_edit_contract_view(request, request_id):
                 pdf.multi_cell(0, 5, edited_contract_text)
                 
                 pdf_output = bytes(pdf.output())
-                file_name = f'nuomos_sutartis_{{lease.id}}_{date.today()}.pdf'
+                file_name = f'nuomos_sutartis_{lease.id}_{date.today()}.pdf'
                 
                 lease.contract_file.save(file_name, ContentFile(pdf_output), save=True)
             except Exception as e:
@@ -1350,19 +1373,17 @@ def prepare_and_edit_contract_view(request, request_id):
                 # Pataisytas nukreipimas klaidos atveju
                 return redirect('nuomotojas_dashboard')
 
-            rental_request.property.status = 'isnuomotas'
-            rental_request.property.save()
             rental_request.status = 'accepted'
             rental_request.save()
             
-            generate_invoice_url = reverse('generate_invoice', args=[lease.id])
-            message_text = f"""
-Sutartis su {lease.tenant.get_full_name()} sėkmingai sudaryta. 
-            <a href="{generate_invoice_url}" class="font-bold text-blue-600 hover:underline">
-                Sugeneruoti pirmąją sąskaitą.
-            </a>
-            """
-            messages.success(request, mark_safe(message_text))
+            # Create a notification for the tenant
+            Notification.objects.create(
+                recipient=lease.tenant,
+                message=f"Nuomotojas {lease.property.owner.get_full_name()} paruošė nuomos sutartį objektui {lease.property.street}. Prašome peržiūrėti ir patvirtinti.",
+                content_object=lease
+            )
+            
+            messages.success(request, f"Sutartis sėkmingai paruošta ir išsiųsta nuomininkui {lease.tenant.get_full_name()} patvirtinti.")
 
             # Pataisytas nukreipimas sėkmės atveju
             return redirect('nuomotojas_dashboard')

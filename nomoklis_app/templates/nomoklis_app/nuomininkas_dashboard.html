@@ -116,8 +116,8 @@
                             <p class="mt-1 text-sm text-gray-500">Nuomos kaina: {{ lease.rent_price|floatformat:"0" }} €/mėn</p>
                         </div>
                         <div class="mt-2 sm:mt-0 flex space-x-3">
-                            <a href="{% url 'confirm_lease' lease.id %}" class="px-3 py-1.5 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700">Patvirtinti</a>
-                            <a href="{% url 'reject_lease' lease.id %}" class="px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">Atmesti</a>
+                            <a href="{% url 'view_and_sign_contract' lease.id %}" class="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">Peržiūrėti sutartį</a>
+                            {# <a href="{% url 'reject_lease' lease.id %}" class="px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">Atmesti</a> #}
                         </div>
                     </div>
                 </li>

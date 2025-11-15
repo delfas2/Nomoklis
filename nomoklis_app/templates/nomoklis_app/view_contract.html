@@ -90,11 +90,20 @@
                                 </div>
                             </div>
                             
-                            <form method="post" class="mt-6">
-                                {% csrf_token %}
-                                
-                                {% if user == lease.tenant and not lease.is_signed_by_tenant or user == lease.property.owner and not lease.is_signed_by_landlord %}
-                                    <button type="submit" name="sign_contract" class="w-full text-center bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700 transition duration-300">Patvirtinti sutartį</button>
+                            <div class="mt-6">
+                                {% if user == lease.tenant and not lease.is_signed_by_tenant %}
+                                    <div class="flex space-x-4">
+                                        <form method="post" class="flex-1">
+                                            {% csrf_token %}
+                                            <button type="submit" name="sign_contract" class="w-full text-center bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700 transition duration-300">Patvirtinti sutartį</button>
+                                        </form>
+                                        <a href="{% url 'reject_lease' lease.id %}" class="flex-1 text-center bg-red-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-red-700 transition duration-300">Atmesti sutartį</a>
+                                    </div>
+                                {% elif user == lease.property.owner and not lease.is_signed_by_landlord %}
+                                    <form method="post">
+                                        {% csrf_token %}
+                                        <button type="submit" name="sign_contract" class="w-full text-center bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700 transition duration-300">Patvirtinti sutartį</button>
+                                    </form>
                                 {% elif lease.is_signed_by_tenant and lease.is_signed_by_landlord %}
                                     <div class="text-center p-4 bg-green-50 text-green-800 rounded-lg">
                                         Sutartis patvirtinta abiejų šalių.
@@ -104,7 +113,7 @@
                                         Jūs jau patvirtinote šią sutartį. Laukiama kitos šalies patvirtinimo.
                                     </div>
                                 {% endif %}
-                            </form>
+                            </div>
                             
                             {% if request.user == lease.property.owner and lease.status == 'active' %}
                             <div class="mt-6 border-t pt-6">
