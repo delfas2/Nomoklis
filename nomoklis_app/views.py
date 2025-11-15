@@ -1286,7 +1286,7 @@ GYVENAMŲJŲ PATALPŲ NUOMOS SUTARTIS
 
 1. SUTARTIES OBJEKTAS
 1.1. Šia sutartimi Nuomotojas suteikia Nuomininkui laikinai, nuomos terminui, naudotis ir valdyti už mokestį gyvenamąsias patalpas – butą, gyvenamosios paskirties, esantį adresu {buto_adresas}, kurio unikalus numeris {buto_unikalus_nr}, plotas {buto_plotas} kv.m. (toliau sutartyje - butas), o Nuomininkas įsipareigoja mokėti nuomos mokestį.
-1.2. Nuomininkas moka Nuomotojui už buto nuomą {nuomos_kaina:.2f} Eur (suma žodžiais).
+1.2. Nuomininkas moka Nuomotojui už buto nuomą {nuomos_kaina:.2f} Eur.
 1.3. Nuomininkas kiekvieną mėnesį moka Nuomotojui nuomos, buto komunalinių ir kitų paslaugų mokesčius, pagal pateiktas sąskaitas.
 
 2. MOKĖJIMŲ IR ATSISKAITYMŲ PAGAL SUTARTĮ TVARKA
