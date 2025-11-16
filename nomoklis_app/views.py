@@ -133,6 +133,15 @@ def nuomotojas_dashboard(request):
     pending_requests = RentalRequest.objects.filter(property__owner=request.user, status='pending').order_by('-created_at')
     # --- PABAIGA ---
     
+    # --- NAUJA DALIS: Gauname sutartis, kurias turi patvirtinti nuomininkas ---
+    pending_leases_for_tenant_approval = Lease.objects.filter(
+        property__owner=request.user, 
+        status='pending', 
+        is_signed_by_tenant=False).order_by('-created_at')
+
+    # Gauname neperskaitytus pranešimus
+    notifications = Notification.objects.filter(recipient=request.user, is_read=False).order_by('-created_at')
+    
     context = {
         'active_page': 'dashboard',
         'total_properties': all_properties.count(),
@@ -142,6 +151,8 @@ def nuomotojas_dashboard(request):
         'rented_properties': rented_properties_qs,
         'available_properties': available_properties,
         'pending_requests': pending_requests, # <-- Perduodame užklausas į šabloną
+        'pending_leases_for_tenant_approval': pending_leases_for_tenant_approval,
+        'notifications': notifications,
     }
     return render(request, 'nomoklis_app/nuomotojas_dashboard.html', context)
 
@@ -1376,10 +1387,23 @@ def prepare_and_edit_contract_view(request, request_id):
             rental_request.status = 'accepted'
             rental_request.save()
             
+            # --- NAUJA DALIS: Atmetame kitas šio nuomininko užklausas ---
+            other_pending_requests = RentalRequest.objects.filter(
+                tenant=lease.tenant, 
+                status='pending'
+            ).exclude(id=rental_request.id)
+            other_pending_requests.update(status='rejected')
+            
             # Create a notification for the tenant
             Notification.objects.create(
                 recipient=lease.tenant,
                 message=f"Nuomotojas {lease.property.owner.get_full_name()} paruošė nuomos sutartį objektui {lease.property.street}. Prašome peržiūrėti ir patvirtinti.",
+                content_object=lease
+            )
+            # Pranešimas nuomotojui, kad laukiama nuomininko patvirtinimo
+            Notification.objects.create(
+                recipient=lease.property.owner,
+                message=f"Sutartis objektui {lease.property.street} išsiųsta nuomininkui {lease.tenant.get_full_name()}. Laukiama patvirtinimo.",
                 content_object=lease
             )
             
@@ -1610,16 +1634,34 @@ def view_and_sign_contract(request, lease_id):
         if 'sign_contract' in request.POST:
             if request.user == lease.tenant:
                 lease.is_signed_by_tenant = True
+                # Pranešimas nuomotojui, kad nuomininkas patvirtino
+                Notification.objects.create(
+                    recipient=lease.property.owner,
+                    message=f"Nuomininkas {lease.tenant.get_full_name()} patvirtino sutartį. Dabar jūsų eilė.",
+                    content_object=lease
+                )
             elif request.user == lease.property.owner:
                 lease.is_signed_by_landlord = True
+                Notification.objects.create(
+                    recipient=lease.tenant,
+                    message=f"Nuomotojas {lease.property.owner.get_full_name()} patvirtino sutartį. Dabar jūsų eilė.",
+                    content_object=lease
+                )
             
             lease.save()
 
+            # --- PATAISYTA LOGIKA ---
+            # Kai sutartis tampa aktyvi (patvirtinta abiejų šalių), atmetame visus kitus šio nuomininko pasiūlymus.
             if lease.is_signed_by_tenant and lease.is_signed_by_landlord:
                 lease.status = 'active'
                 lease.property.status = 'isnuomotas'
                 lease.property.save()
                 lease.save()
+
+                # Atmetame kitus laukiančius pasiūlymus
+                other_pending_leases = Lease.objects.filter(tenant=lease.tenant, status='pending').exclude(id=lease.id)
+                other_pending_leases.update(status='rejected')
+
                 messages.success(request, "Sutartis sėkmingai aktyvuota!")
             else:
                 messages.success(request, "Sėkmingai patvirtinote sutartį.")
