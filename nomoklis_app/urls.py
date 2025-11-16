@@ -77,6 +77,7 @@ urlpatterns = [
     path('panel/support-tickets/<int:ticket_id>/', views.admin_support_ticket_detail_view, name='admin_support_ticket_detail'),
     path('panel/settings/', views.admin_system_settings_view, name='admin_system_settings'),
     path('invoice/<int:invoice_id>/mark-as-paid/', views.mark_invoice_as_paid, name='mark_invoice_as_paid'), # Ši eilutė atrodo pasikartojanti, bet palieku, kaip buvo
+    path('invoice/<int:invoice_id>/tenant-confirm-payment/', views.tenant_confirm_payment, name='tenant_confirm_payment'),
     path('choose-role/', views.choose_role_view, name='choose_role'),
     path('profile/change-password/', views.change_password_view, name='change_password'),
     path('accounts/', include('allauth.urls')),

@@ -63,8 +63,8 @@
                                         <p class="font-semibold text-red-800">Reikia apmokėti sąskaitą</p>
                                         <p class="text-2xl font-bold text-red-900">{{ unpaid_invoice.amount|floatformat:"2" }} €</p>
                                     </div>
-                                    <a href="{% url 'lease_invoices' active_lease.id %}" class="bg-red-600 text-white font-semibold py-2 px-5 rounded-lg hover:bg-red-700 transition">
-                                        Mokėti
+                                    <a href="{% url 'lease_invoices' active_lease.id %}" class="bg-blue-600 text-white font-semibold py-2 px-5 rounded-lg hover:bg-blue-700 transition">
+                                        Apmokėti sąskaitą
                                     </a>
                                 </div>
                             </div>

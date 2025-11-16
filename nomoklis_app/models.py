@@ -1,5 +1,6 @@
 import io
 import os
+from datetime import date
 from PIL import Image
 from django.core.files.base import ContentFile
 from django.db import models
@@ -263,7 +264,7 @@ class RentalRequest(models.Model):
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
     created_at = models.DateTimeField(auto_now_add=True)
 
-    start_date = models.DateField(verbose_name="Norima nuomos pradžia")
+    start_date = models.DateField(verbose_name="Norima nuomos pradžia", default=date.today)
     end_date = models.DateField(verbose_name="Norima nuomos pabaiga", null=True, blank=True)
     offered_price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Siūloma kaina (€/mėn.)", null=True, blank=True)
     message = models.TextField(verbose_name="Žinutė nuomotojui", null=True, blank=True)
@@ -356,12 +357,19 @@ class Notification(models.Model):
         return self.message
 
 class Invoice(models.Model):
+    STATUS_CHOICES = [
+        ('unpaid', 'Neapmokėta'),
+        ('pending', 'Laukiama patvirtinimo'),
+        ('paid', 'Apmokėta'),
+    ]
+
     lease = models.ForeignKey(Lease, on_delete=models.CASCADE, related_name='invoices')
     invoice_date = models.DateField(auto_now_add=True)
     due_date = models.DateField()
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     invoice_file = models.FileField(upload_to='invoices/', blank=True, null=True)
-    is_paid = models.BooleanField(default=False)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='unpaid')
+    is_paid = models.BooleanField(default=False) # Šis laukas bus palaipsniui naikinamas
 
     def __str__(self):
         return f"Invoice for {self.lease} on {self.invoice_date}"
