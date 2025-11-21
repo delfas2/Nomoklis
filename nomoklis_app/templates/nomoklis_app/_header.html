@@ -1,10 +1,12 @@
 <header class="flex-shrink-0 bg-white border-b">
     <div class="flex items-center justify-between p-2">
         <!-- Mobile menu button -->
-        <button @click="open = !open" class="md:hidden p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus:bg-gray-100 focus:text-gray-600 rounded-full">
+        <button @click="open = !open"
+            class="md:hidden p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus:bg-gray-100 focus:text-gray-600 rounded-full">
             <span class="sr-only">Open menu</span>
             <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round"></path>
             </svg>
         </button>
 
@@ -12,33 +14,22 @@
         </div>
 
         <div class="flex items-center space-x-3">
-            
-            <!-- Time Travel Control -->
-            <form action="{% url 'set_simulated_date' %}" method="post" class="flex items-center mr-2">
-                {% csrf_token %}
-                <div class="flex items-center bg-gray-100 rounded-lg p-1 border {% if simulated_date %}border-blue-500 bg-blue-50{% endif %}">
-                    <input type="date" name="simulated_date" value="{{ simulated_date|default:'' }}" 
-                           class="bg-transparent border-none text-xs focus:ring-0 p-1 h-6 w-32" 
-                           title="Simuliuoti datą">
-                    <button type="submit" class="ml-1 px-2 py-0.5 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded text-xs h-6 flex items-center">
-                        {% if simulated_date %}Keisti{% else %}Set{% endif %}
-                    </button>
-                    {% if simulated_date %}
-                    <button type="submit" name="simulated_date" value="" class="ml-1 px-2 py-0.5 bg-red-100 hover:bg-red-200 text-red-600 rounded text-xs h-6 flex items-center" title="Grįžti į realų laiką">
-                        ✕
-                    </button>
-                    {% endif %}
-                </div>
-            </form>
-            
+
+
             <div x-data="{ open: false }" class="relative">
-                <button @click="open = !open" class="relative p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus:bg-gray-100 focus:text-gray-600 rounded-full">
+                <button @click="open = !open"
+                    class="relative p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus:bg-gray-100 focus:text-gray-600 rounded-full">
                     <span class="sr-only">View notifications</span>
                     <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M15 17H20L18.5951 15.5951C18.2141 15.2141 18 14.6973 18 14.1585V11C18 8.38757 16.3304 6.16509 14 5.34142V5C14 3.89543 13.1046 3 12 3C10.8954 3 10 3.89543 10 5V5.34142C7.66962 6.16509 6 8.38757 6 11V14.1585C6 14.6973 5.78595 15.2141 5.40493 15.5951L4 17H9M15 17V18C15 19.6569 13.6569 21 12 21C10.3431 21 9 19.6569 9 18V17M15 17H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                        <path
+                            d="M15 17H20L18.5951 15.5951C18.2141 15.2141 18 14.6973 18 14.1585V11C18 8.38757 16.3304 6.16509 14 5.34142V5C14 3.89543 13.1046 3 12 3C10.8954 3 10 3.89543 10 5V5.34142C7.66962 6.16509 6 8.38757 6 11V14.1585C6 14.6973 5.78595 15.2141 5.40493 15.5951L4 17H9M15 17V18C15 19.6569 13.6569 21 12 21C10.3431 21 9 19.6569 9 18V17M15 17H9"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        </path>
                     </svg>
                 </button>
-                <div x-show="open" @click.away="open = false" x-transition class="absolute right-0 w-80 mt-2 py-2 bg-white border rounded-md shadow-lg overflow-hidden z-20" style="display: none;">
+                <div x-show="open" @click.away="open = false" x-transition
+                    class="absolute right-0 w-80 mt-2 py-2 bg-white border rounded-md shadow-lg overflow-hidden z-20"
+                    style="display: none;">
                     <div id="notifications-popup-content">
                         {# Turinys bus įkeltas per JS #}
                     </div>
@@ -47,15 +38,20 @@
 
             <div x-data="{ open: false }" class="relative">
                 <button @click="open = !open" class="flex items-center space-x-2 relative focus:outline-none">
-                    <img class="h-9 w-9 rounded-full object-cover" src=" {{ user.profile.profile_image.url }} " alt="Avatar">
+                    <img class="h-9 w-9 rounded-full object-cover" src=" {{ user.profile.profile_image.url }} "
+                        alt="Avatar">
                     <span class="hidden md:inline-block font-medium text-gray-700">{{ user.get_full_name|default:user.username }}</span>
                 </button>
 
-                <div x-show="open" @click.away="open = false" x-transition class="absolute right-0 w-48 mt-2 py-2 bg-white border rounded-md shadow-xl z-20" style="display: none;">
-                    <a href="{% url 'profile_redirect' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-500 hover:text-white">
+                <div x-show="open" @click.away="open = false" x-transition
+                    class="absolute right-0 w-48 mt-2 py-2 bg-white border rounded-md shadow-xl z-20"
+                    style="display: none;">
+                    <a href="{% url 'profile_redirect' %}"
+                        class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-500 hover:text-white">
                         Profilis
                     </a>
-                    <a href="{% url 'account_logout' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-500 hover:text-white">
+                    <a href="{% url 'account_logout' %}"
+                        class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-500 hover:text-white">
                         Atsijungti
                     </a>
                 </div>
@@ -65,24 +61,24 @@
 </header>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const notificationsButton = document.querySelector('.relative.p-2');
-    const notificationsPopup = document.getElementById('notifications-popup-content');
+    document.addEventListener('DOMContentLoaded', function () {
+        const notificationsButton = document.querySelector('.relative.p-2');
+        const notificationsPopup = document.getElementById('notifications-popup-content');
 
-    if(notificationsButton) {
-        notificationsButton.addEventListener('click', async function() {
-            // Pirmiausia sugeneruojame URL adresą į kintamąjį
-            const allNotificationsUrl = "{% url 'notification_list' %}";
-            try {
-                const response = await fetch("{% url 'notifications_popup' %}");
-                const html = await response.text();
-                // Tada naudojame kintamąjį JavaScript'e
-                notificationsPopup.innerHTML = html + `<a href="${allNotificationsUrl}" class="block px-4 py-3 text-sm text-center font-medium text-blue-600 hover:bg-gray-100">Žiūrėti visus pranešimus</a>`;
-            } catch (error) {
-                notificationsPopup.innerHTML = '<p class="px-4 py-2 text-sm text-gray-500">Nepavyko užkrauti pranešimų.</p>';
-                console.error('Klaida kraunant pranešimus:', error);
-            }
-        });
-    }
-});
+        if (notificationsButton) {
+            notificationsButton.addEventListener('click', async function () {
+                // Pirmiausia sugeneruojame URL adresą į kintamąjį
+                const allNotificationsUrl = "{% url 'notification_list' %}";
+                try {
+                    const response = await fetch("{% url 'notifications_popup' %}");
+                    const html = await response.text();
+                    // Tada naudojame kintamąjį JavaScript'e
+                    notificationsPopup.innerHTML = html + `<a href="${allNotificationsUrl}" class="block px-4 py-3 text-sm text-center font-medium text-blue-600 hover:bg-gray-100">Žiūrėti visus pranešimus</a>`;
+                } catch (error) {
+                    notificationsPopup.innerHTML = '<p class="px-4 py-2 text-sm text-gray-500">Nepavyko užkrauti pranešimų.</p>';
+                    console.error('Klaida kraunant pranešimus:', error);
+                }
+            });
+        }
+    });
 </script>

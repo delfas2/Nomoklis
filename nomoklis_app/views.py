@@ -2430,16 +2430,3 @@ def admin_support_ticket_detail_view(request, ticket_id):
         'active_page': 'support_tickets',
     }
     return render(request, 'nomoklis_app/admin_support_ticket_detail.html', context)
-
-@require_POST
-def set_simulated_date_view(request):
-    date_str = request.POST.get('simulated_date')
-    if date_str:
-        request.session['simulated_date'] = date_str
-        messages.success(request, f"Laikas sėkmingai pakeistas į {date_str}")
-    else:
-        if 'simulated_date' in request.session:
-            del request.session['simulated_date']
-            messages.success(request, "Grįžta į realų laiką")
-            
-    return redirect(request.META.get('HTTP_REFERER', 'index'))
