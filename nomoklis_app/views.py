@@ -5,6 +5,7 @@ from fpdf import FPDF
 from django.http import HttpResponse
 from datetime import date
 from django.shortcuts import render, redirect
+from .time_utils import get_current_date, get_current_time
 from django.contrib.auth.password_validation import password_validators_help_texts
 from django.contrib import messages, admin
 from django.contrib.auth.decorators import login_required
@@ -169,7 +170,7 @@ def nuomininkas_dashboard(request):
     # Gauname visas pasibaigusias sutartis
     past_leases_qs = Lease.objects.filter(
         Q(tenant=request.user) &
-        (Q(status='terminated') | Q(end_date__lt=timezone.now().date()))
+        (Q(status='terminated') | Q(end_date__lt=get_current_time(request).date()))
     ).order_by('-end_date').distinct()
 
     # Gauname ID tų sutarčių, kurioms jau paliktas atsiliepimas
@@ -184,7 +185,7 @@ def nuomininkas_dashboard(request):
     unpaid_invoice = None
     next_payment_date = None
     if active_lease:
-        unpaid_invoice = Invoice.objects.filter(lease=active_lease, is_paid=False).order_by('-invoice_date').first()
+        unpaid_invoice = Invoice.objects.filter(lease=active_lease, status='unpaid').order_by('-invoice_date').first()
         if not unpaid_invoice:
             # ... (sekančios mokėjimo datos skaičiavimo logika lieka ta pati)
             pass
@@ -248,7 +249,7 @@ def stats_view(request):
     
     # Paruošiame QuerySets, kuriuos filtruosime
     properties_to_analyze = all_user_properties
-    paid_invoices_qs = Invoice.objects.filter(lease__property__owner=user, is_paid=True, invoice_date__year=current_year)
+    paid_invoices_qs = Invoice.objects.filter(lease__property__owner=user, status='paid', invoice_date__year=current_year)
     problem_reports_qs = ProblemReport.objects.filter(lease__property__owner=user, created_at__year=current_year, resolution_costs__isnull=False)
 
     if selected_property_id and selected_property_id.isdigit():
@@ -263,7 +264,7 @@ def stats_view(request):
     rented_properties_count = all_user_properties.filter(status='isnuomotas').count()
     occupancy_rate = (rented_properties_count / total_properties_count * 100) if total_properties_count > 0 else 0
     
-    overall_paid_invoices = Invoice.objects.filter(lease__property__owner=user, is_paid=True, invoice_date__year=current_year)
+    overall_paid_invoices = Invoice.objects.filter(lease__property__owner=user, status='paid', invoice_date__year=current_year)
     overall_problems = ProblemReport.objects.filter(lease__property__owner=user, created_at__year=current_year, resolution_costs__isnull=False)
     
     total_gross_income = overall_paid_invoices.aggregate(total=Sum('amount'))['total'] or 0
@@ -1257,12 +1258,12 @@ def cancel_rental_request_view(request, request_id):
         messages.error(request, 'Šios užklausos atšaukti nebegalima.')
     return redirect('nuomininkas_dashboard')
 
-def _generate_contract_text(rental_request, lease_details):
+def _generate_contract_text(request, rental_request, lease_details):
     """
     Pagalbinė funkcija, kuri sugeneruoja pradinį sutarties tekstą,
     užpildydama jį maksimaliu kiekiu duomenų iš sistemos.
     """
-    sutarties_data = date.today().strftime('%Y m. %m d.')
+    sutarties_data = get_current_date(request).strftime('%Y m. %m d.')
     
     # Šalių informacija
     landlord = rental_request.property.owner
@@ -1375,7 +1376,7 @@ def prepare_and_edit_contract_view(request, request_id):
                 pdf.multi_cell(0, 5, edited_contract_text)
                 
                 pdf_output = bytes(pdf.output())
-                file_name = f'nuomos_sutartis_{lease.id}_{date.today()}.pdf'
+                file_name = f'nuomos_sutartis_{lease.id}_{get_current_date(request)}.pdf'
                 
                 lease.contract_file.save(file_name, ContentFile(pdf_output), save=True)
             except Exception as e:
@@ -1416,7 +1417,7 @@ def prepare_and_edit_contract_view(request, request_id):
         initial_details = {
             'deposit_amount': rental_request.offered_price
         }
-        initial_text = _generate_contract_text(rental_request, initial_details)
+        initial_text = _generate_contract_text(request, rental_request, initial_details)
         initial_details['contract_text'] = initial_text
         
         form = PrepareContractForm(initial=initial_details)
@@ -1431,139 +1432,27 @@ def prepare_and_edit_contract_view(request, request_id):
 @login_required
 def generate_invoice_view(request, lease_id):
     lease = get_object_or_404(Lease, id=lease_id, property__owner=request.user)
-    today = date.today()
+    today = get_current_date(request)
 
+    # Patikriname, ar tai pirma sąskaita. Jei ne, tikriname, ar šio mėn. jau sugeneruota
     if not lease.invoices.exists(): # Jei tai pirma sąskaita
         pass # Leidžiame generuoti
     elif Invoice.objects.filter(lease=lease, invoice_date__year=today.year, invoice_date__month=today.month).exists():
         messages.warning(request, "Šio mėnesio sąskaita šiai sutarčiai jau buvo sugeneruota.")
         return redirect('contracts') # Grįžtame į sutarčių sąrašą
     
-    # --- SĄSKAITOS DUOMENŲ RUOŠIMAS ---
-    total_amount = 0
-    invoice_items = []
-    
-    is_first_invoice = not lease.invoices.exists()
-
-    if is_first_invoice:
-        # Pirmoji sąskaita generuojama pagal sutarties pradžios datą
-        invoice_date_context = lease.start_date
+    try:
+        from .services import generate_invoice
+        invoice = generate_invoice(lease, target_date=today)
         
-        # Neleidžiame generuoti pirmos sąskaitos per anksti
-        if today.year < invoice_date_context.year or (today.year == invoice_date_context.year and today.month < invoice_date_context.month):
-             messages.error(request, f"Pirmąją sąskaitą už {invoice_date_context.strftime('%B')} mėn. galėsite sugeneruoti tik {invoice_date_context.strftime('%Y-%m')}.")
-             return redirect('nuomotojas_dashboard')
-
-        #Įtraukiame depozitą
-        total_amount += lease.deposit_amount
-        invoice_items.append({
-            'name': 'Depozitas',
-            'price': f"{lease.deposit_amount:.2f}"
-        })
-        
-        # Skaičiuojame proporcinę nuomą
-        if lease.start_date.day != 1:
-            days_in_month = calendar.monthrange(invoice_date_context.year, invoice_date_context.month)[1]
-            days_to_pay_for = days_in_month - lease.start_date.day + 1
-            proportional_rent = (lease.rent_price / days_in_month) * days_to_pay_for
-            total_amount += proportional_rent
-            invoice_items.append({
-                'name': f"Nuoma už {invoice_date_context.strftime('%B')} mėn. ({days_to_pay_for} d.)",
-                'price': f"{proportional_rent:.2f}"
-            })
-        else: # Jei sutartis prasideda 1-ą dieną
-            total_amount += lease.rent_price
-            invoice_items.append({
-                'name': f"Nuoma už {invoice_date_context.strftime('%B')} mėn.",
-                'price': f"{lease.rent_price:.2f}"
-            })
-    else: # Ne pirmo mėnesio logika
-        invoice_date_context = today
-        # Tikriname, ar šio mėnesio sąskaita jau sugeneruota
-        if Invoice.objects.filter(lease=lease, invoice_date__year=today.year, invoice_date__month=today.month).exists():
+        if invoice:
+            messages.success(request, f"Sąskaita sėkmingai sugeneruota nuomininkui {lease.tenant.get_full_name()}.")
+        else:
             messages.warning(request, "Šio mėnesio sąskaita šiai sutarčiai jau buvo sugeneruota.")
-            return redirect('nuomotojas_dashboard')
-
-        total_amount = lease.rent_price
-        invoice_items.append({
-            'name': f"Nuoma už {invoice_date_context.strftime('%B')} mėn.",
-            'price': f"{lease.rent_price:.2f}"
-        })
+            
+    except Exception as e:
+        messages.error(request, f"Įvyko klaida generuojant sąskaitą: {str(e)}")
         
-        last_month = today - timedelta(days=today.day)
-        repair_costs = ProblemReport.objects.filter(
-            lease=lease,
-            status='isspresta',
-            paid_by='nuomininkas',
-            created_at__month=last_month.month,
-            created_at__year=last_month.year
-        ).aggregate(total=Sum('resolution_costs'))['total'] or 0
-
-        if repair_costs > 0:
-            total_amount += repair_costs
-            invoice_items.append({
-                'name': 'Remonto išlaidos',
-                'price': f"{repair_costs:.2f}"
-            })
-
-    # --- PDF GENERAVIMAS ---
-    # ... (PDF generavimo kodas lieka toks pat, kaip anksčiau)
-    pdf = FPDF()
-    pdf.add_page()
-    
-    regular_font_path = os.path.join(settings.BASE_DIR, 'DejaVuSans.ttf')
-    pdf.add_font('DejaVu', '', regular_font_path, uni=True)
-    bold_font_path = os.path.join(settings.BASE_DIR, 'dejavu-sans', 'DejaVuSans-Bold.ttf')
-    pdf.add_font('DejaVu', 'B', bold_font_path, uni=True)
-
-    pdf.set_font('DejaVu', 'B', 20)
-    pdf.cell(0, 10, f"Sąskaita Nr. {lease.id}-{invoice_date_context.strftime('%Y%m')}", 0, 1, 'L')
-    pdf.set_font('DejaVu', '', 10)
-    pdf.cell(0, 5, f"Išrašymo data: {today.strftime('%Y-%m-%d')}", 0, 1, 'L')
-    pdf.ln(10)
-
-    pdf.set_font('DejaVu', 'B', 11)
-    pdf.cell(95, 7, "Tiekėjas", 0, 0, 'L')
-    pdf.cell(95, 7, "Pirkėjas", 0, 1, 'L')
-    pdf.set_font('DejaVu', '', 10)
-    pdf.cell(95, 6, lease.property.owner.get_full_name(), 0, 0, 'L')
-    pdf.cell(95, 6, lease.tenant.get_full_name(), 0, 1, 'L')
-    pdf.cell(95, 6, lease.property.owner.email, 0, 0, 'L')
-    pdf.cell(95, 6, lease.tenant.email, 0, 1, 'L')
-    pdf.ln(10)
-
-    pdf.set_font('DejaVu', 'B', 10)
-    pdf.set_fill_color(240, 240, 240)
-    pdf.cell(130, 8, "Paslaugos pavadinimas", 1, 0, 'L', 1)
-    pdf.cell(30, 8, "Kiekis", 1, 0, 'C', 1)
-    pdf.cell(30, 8, "Suma, Eur", 1, 1, 'R', 1)
-
-    pdf.set_font('DejaVu', '', 10)
-    for item in invoice_items:
-        pdf.cell(130, 7, item['name'], 1, 0, 'L')
-        pdf.cell(30, 7, "1", 1, 0, 'C')
-        pdf.cell(30, 7, item['price'], 1, 1, 'R')
-    
-    pdf.set_font('DejaVu', 'B', 12)
-    pdf.cell(160, 10, "Mokėti iš viso:", 0, 0, 'R')
-    pdf.cell(30, 10, f"{total_amount:.2f} Eur", 0, 1, 'R')
-    pdf.ln(5)
-    
-    pdf.set_font('DejaVu', '', 10)
-    pdf.cell(0, 7, f"Apmokėti ne vėliau kaip iki {due_date.strftime('%Y-%m-%d')}", 0, 1, 'L')
-
-    pdf_output = bytes(pdf.output())
-    file_name = f'saskaita_{{invoice.id}}_{today.strftime("%Y_%m")}.pdf'
-    
-    invoice = Invoice.objects.create(
-        lease=lease,
-        invoice_date=today, # Sąskaitos data yra šiandienos
-        due_date=due_date,
-        amount=total_amount
-    )
-    invoice.invoice_file.save(file_name, ContentFile(pdf_output), save=True)
-    
-    messages.success(request, f"Sąskaita sėkmingai sugeneruota nuomininkui {lease.tenant.get_full_name()}.")
     return redirect('nuomotojas_dashboard')
 
 @login_required
@@ -1728,7 +1617,7 @@ def latest_readings_popup_view(request, lease_id):
 @login_required
 def prepare_invoice_popup_view(request, lease_id):
     lease = get_object_or_404(Lease, id=lease_id, property__owner=request.user)
-    today = date.today()
+    today = get_current_date(request)
 
     # Patikriname, ar šio mėnesio sąskaita jau egzistuoja
     if Invoice.objects.filter(lease=lease, invoice_date__year=today.year, invoice_date__month=today.month).exists():
@@ -1737,88 +1626,43 @@ def prepare_invoice_popup_view(request, lease_id):
     if request.method == 'POST':
         formset = UtilityBillFormSet(request.POST, prefix='utilities')
         if formset.is_valid():
-            invoice_items = []
-            total_utilities = 0
+            utility_items = []
             
-            # Įtraukiame nuomą kaip pirmą eilutę
-            total_amount = lease.rent_price
-            invoice_items.append({
-                'name': f"Nuoma už {today.strftime('%B')} mėn.",
-                'price': f"{lease.rent_price:.2f}"
-            })
-
-            # Pridedame komunalinius mokesčius iš formos
+            # Collect utility items from formset
             for form in formset:
                 if form.cleaned_data and not form.cleaned_data.get('DELETE', False):
                     description = form.cleaned_data.get('description')
                     amount = form.cleaned_data.get('amount')
                     if description and amount:
-                        total_utilities += amount
-                        invoice_items.append({'name': description, 'price': f"{amount:.2f}"})
+                        utility_items.append({'name': description, 'price': amount})
             
-            total_amount += total_utilities
+            try:
+                # Use the service to generate the invoice
+                from .services import generate_invoice
+                invoice = generate_invoice(lease, target_date=today, utility_items=utility_items)
+                
+                if invoice:
+                    # Save detailed utility bills for record keeping
+                    for item in utility_items:
+                        UtilityBill.objects.create(
+                            invoice=invoice, 
+                            description=item['name'], 
+                            amount=item['price']
+                        )
+                    
+                    messages.success(request, f"Sąskaita už {today.strftime('%Y-%m')} sėkmingai sugeneruota.")
+                else:
+                    messages.warning(request, "Sąskaita šiam mėnesiui jau egzistuoja.")
+                    
+            except Exception as e:
+                messages.error(request, f"Įvyko klaida generuojant sąskaitą: {e}")
             
-            # 1. Sukuriame pagrindinį Invoice objektą
-            # Assuming lease has payment_day attribute
-            due_date = today.replace(day=getattr(lease, 'payment_day', 15))
-            invoice = Invoice.objects.create(lease=lease, due_date=due_date, amount=total_amount)
-
-            # 2. Išsaugome detalizuotas komunalinių eilučių sumas
-            for item in invoice_items:
-                if "Nuoma už" not in item['name']: # Nuomos eilutės nesaugome kaip UtilityBill
-                    UtilityBill.objects.create(invoice=invoice, description=item['name'], amount=Decimal(item['price']))
-            
-            # 3. Generuojame PDF
-            pdf = FPDF()
-            pdf.add_page()
-            
-            regular_font_path = os.path.join(settings.BASE_DIR, 'DejaVuSans.ttf')
-            pdf.add_font('DejaVu', '', regular_font_path, uni=True)
-            bold_font_path = os.path.join(settings.BASE_DIR, 'dejavu-sans', 'DejaVuSans-Bold.ttf')
-            pdf.add_font('DejaVu', 'B', bold_font_path, uni=True)
-
-            pdf.set_font('DejaVu', 'B', 20)
-            pdf.cell(0, 10, f"Sąskaita Nr. {invoice.id}-{today.strftime('%Y%m')}", 0, 1, 'L')
-            pdf.set_font('DejaVu', '', 10)
-            pdf.cell(0, 5, f"Išrašymo data: {today.strftime('%Y-%m-%d')}", 0, 1, 'L')
-            pdf.ln(10)
-
-            pdf.set_font('DejaVu', 'B', 11)
-            pdf.cell(95, 7, "Tiekėjas", 0, 0, 'L')
-            pdf.cell(95, 7, "Pirkėjas", 0, 1, 'L')
-            pdf.set_font('DejaVu', '', 10)
-            pdf.cell(95, 6, lease.property.owner.get_full_name(), 0, 0, 'L')
-            pdf.cell(95, 6, lease.tenant.get_full_name(), 0, 1, 'L')
-            pdf.cell(95, 6, lease.property.owner.email, 0, 0, 'L')
-            pdf.cell(95, 6, lease.tenant.email, 0, 1, 'L')
-            pdf.ln(10)
-
-            pdf.set_font('DejaVu', 'B', 10)
-            pdf.set_fill_color(240, 240, 240)
-            pdf.cell(130, 8, "Paslaugos pavadinimas", 1, 0, 'L', 1)
-            pdf.cell(30, 8, "Kiekis", 1, 0, 'C', 1)
-            pdf.cell(30, 8, "Suma, Eur", 1, 1, 'R', 1)
-
-            pdf.set_font('DejaVu', '', 10)
-            for item in invoice_items:
-                pdf.cell(130, 7, item['name'], 1, 0, 'L')
-                pdf.cell(30, 7, "1", 1, 0, 'C')
-                pdf.cell(30, 7, item['price'], 1, 1, 'R')
-            
-            pdf.set_font('DejaVu', 'B', 12)
-            pdf.cell(160, 10, "Mokėti iš viso:", 0, 0, 'R')
-            pdf.cell(30, 10, f"{total_amount:.2f} Eur", 0, 1, 'R')
-            pdf.ln(5)
-            
-            pdf.set_font('DejaVu', '', 10)
-            pdf.cell(0, 7, f"Apmokėti ne vėliau kaip iki {due_date.strftime('%Y-%m-%d')}", 0, 1, 'L')
-
-            pdf_output = bytes(pdf.output())
-            file_name = f'saskaita_{{invoice.id}}_{today.strftime("%Y_%m")}.pdf'
-            invoice.invoice_file.save(file_name, ContentFile(pdf_output), save=True)
-            
-            messages.success(request, "Sąskaita su komunaliniais mokesčiais sėkmingai sugeneruota.")
             return redirect('contracts')
+        else:
+            print("Formset errors:", formset.errors) # Debugging
+            for error in formset.errors:
+                if error:
+                    messages.error(request, f"Klaida formoje: {error}")
     else: # GET metodas
         formset = UtilityBillFormSet(prefix='utilities')
 
@@ -1855,7 +1699,7 @@ def tenant_lease_archive_view(request):
     # Gauname visas pasibaigusias sutartis
     past_leases_qs = Lease.objects.filter(
         Q(tenant=request.user) &
-        (Q(status='terminated') | Q(end_date__lt=timezone.now().date()))
+        (Q(status='terminated') | Q(end_date__lt=get_current_time(request).date()))
     ).order_by('-end_date').distinct()
 
     # Atrenkame tik tas, kurios jau turi atsiliepimą
@@ -1922,7 +1766,7 @@ def admin_dashboard(request):
     Atvaizduoja administratoriaus panelės puslapį su realiais duomenimis.
     Prieinamas tik prisijungusiems supervartotojams.
     """
-    now = timezone.now()
+    now = get_current_time(request)
     current_month = now.month
     current_year = now.year
 
@@ -1950,7 +1794,7 @@ def admin_dashboard(request):
     Prieinamas tik prisijungusiems supervartotojams.
     """
     # --- Duomenys statistikoms ir grafikams (šis kodas lieka toks pat) ---
-    six_months_ago = timezone.now() - timedelta(days=180)
+    six_months_ago = get_current_time(request) - timedelta(days=180)
     user_growth_data = User.objects.filter(date_joined__gte=six_months_ago) \
         .annotate(month=TruncMonth('date_joined')) \
         .values('month') \
@@ -1963,7 +1807,7 @@ def admin_dashboard(request):
         .order_by('month')
     
     months_labels = []
-    current_date = timezone.now().replace(day=1)
+    current_date = get_current_time(request).replace(day=1)
     for i in range(5, -1, -1):
         month_date = current_date - timedelta(days=i*30)
         months_labels.append(month_date.strftime("%B"))
@@ -2126,7 +1970,7 @@ def create_checkout_session(request, invoice_id):
     """
     try:
         invoice = get_object_or_404(Invoice, id=invoice_id)
-        # Saugumo patikra, ar vartotojas bando apmokėti savo sąskaitą
+        # Saugumo patikra, ar vartotojas bando apmokėti savo sąskaitą (nebenaudojama)
         if invoice.lease.tenant != request.user:
             return JsonResponse({'error': 'Neturite teisės apmokėti šios sąskaitos.'}, status=403)
 
@@ -2252,7 +2096,7 @@ def stripe_webhook_view(request):
                     # Atnaujiname tik jei dar neatnaujinta, kad išvengti pasikartojančių webhook'ų
                     if not prop.is_paid_listing:
                         prop.is_paid_listing = True
-                        prop.paid_at = timezone.now() # Išsaugome apmokėjimo datą
+                        prop.paid_at = get_current_time(request) # Išsaugome apmokėjimo datą
                         # Būsena 'paruostas' jau turėtų būti nustatyta prieš mokėjimą
                         prop.save(update_fields=['is_paid_listing', 'paid_at'])
                         logger.info(f"Objektas {prop.id} sėkmingai pažymėtas kaip apmokėtas.")
@@ -2272,7 +2116,8 @@ def stripe_webhook_view(request):
             if invoice_id:
                 try:
                     invoice = Invoice.objects.get(id=invoice_id)
-                    invoice.is_paid = True
+                    invoice.status = 'paid'
+                    invoice.is_paid = True # Atgalinis suderinamumas
                     invoice.save()
                 except Invoice.DoesNotExist:
                     # Jei sąskaita nerasta, loguojame įvykį
@@ -2294,11 +2139,32 @@ def mark_invoice_as_paid(request, invoice_id):
         messages.error(request, 'Jūs neturite teisės atlikti šio veiksmo.')
         return redirect('lease_invoices', lease_id=invoice.lease.id)
 
-    # Pakeičiame būseną ir išsaugome
-    invoice.is_paid = True
+    # Pakeičiame būseną į "Apmokėta" ir išsaugome
+    invoice.status = 'paid'
+    invoice.is_paid = True # Atgalinis suderinamumas
     invoice.save()
 
     messages.success(request, f'Sąskaita sėkmingai pažymėta kaip apmokėta.')
+    return redirect('lease_invoices', lease_id=invoice.lease.id)
+
+@login_required
+def tenant_confirm_payment(request, invoice_id):
+    """
+    Nuomininkas pažymi, kad apmokėjo sąskaitą.
+    """
+    invoice = get_object_or_404(Invoice, id=invoice_id, lease__tenant=request.user)
+
+    if invoice.status == 'unpaid':
+        invoice.status = 'pending'
+        invoice.save()
+
+        # Sukuriame pranešimą nuomotojui
+        Notification.objects.create(
+            recipient=invoice.lease.property.owner,
+            message=f"Nuomininkas {request.user.get_full_name()} pažymėjo, kad apmokėjo sąskaitą Nr. {invoice.id}. Prašome patvirtinti.",
+            content_object=invoice.lease # Nukreips į sutarčių puslapį
+        )
+        messages.success(request, 'Sėkmingai pažymėjote, kad atlikote mokėjimą. Nuomotojas informuotas.')
     return redirect('lease_invoices', lease_id=invoice.lease.id)
 
 @login_required
@@ -2514,3 +2380,16 @@ def admin_support_ticket_detail_view(request, ticket_id):
         'active_page': 'support_tickets',
     }
     return render(request, 'nomoklis_app/admin_support_ticket_detail.html', context)
+
+@require_POST
+def set_simulated_date_view(request):
+    date_str = request.POST.get('simulated_date')
+    if date_str:
+        request.session['simulated_date'] = date_str
+        messages.success(request, f"Laikas sėkmingai pakeistas į {date_str}")
+    else:
+        if 'simulated_date' in request.session:
+            del request.session['simulated_date']
+            messages.success(request, "Grįžta į realų laiką")
+            
+    return redirect(request.META.get('HTTP_REFERER', 'index'))

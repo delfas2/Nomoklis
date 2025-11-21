@@ -74,6 +74,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 # Pridedame savo context procesorių
                 'nomoklis_app.context_processors.unread_messages_count',
+                'nomoklis_app.context_processors.simulated_date_context',
             ],
         },
     },

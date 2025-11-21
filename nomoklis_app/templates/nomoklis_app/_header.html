@@ -13,6 +13,24 @@
 
         <div class="flex items-center space-x-3">
             
+            <!-- Time Travel Control -->
+            <form action="{% url 'set_simulated_date' %}" method="post" class="flex items-center mr-2">
+                {% csrf_token %}
+                <div class="flex items-center bg-gray-100 rounded-lg p-1 border {% if simulated_date %}border-blue-500 bg-blue-50{% endif %}">
+                    <input type="date" name="simulated_date" value="{{ simulated_date|default:'' }}" 
+                           class="bg-transparent border-none text-xs focus:ring-0 p-1 h-6 w-32" 
+                           title="Simuliuoti datą">
+                    <button type="submit" class="ml-1 px-2 py-0.5 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded text-xs h-6 flex items-center">
+                        {% if simulated_date %}Keisti{% else %}Set{% endif %}
+                    </button>
+                    {% if simulated_date %}
+                    <button type="submit" name="simulated_date" value="" class="ml-1 px-2 py-0.5 bg-red-100 hover:bg-red-200 text-red-600 rounded text-xs h-6 flex items-center" title="Grįžti į realų laiką">
+                        ✕
+                    </button>
+                    {% endif %}
+                </div>
+            </form>
+            
             <div x-data="{ open: false }" class="relative">
                 <button @click="open = !open" class="relative p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus:bg-gray-100 focus:text-gray-600 rounded-full">
                     <span class="sr-only">View notifications</span>
