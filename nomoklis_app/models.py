@@ -368,6 +368,7 @@ class Invoice(models.Model):
     invoice_date = models.DateField(auto_now_add=True)
     due_date = models.DateField()
     amount = models.DecimalField(max_digits=10, decimal_places=2)
+    rent_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, help_text="Tik nuomos suma, be depozito, remonto ir komunalinių")
     invoice_file = models.FileField(upload_to='invoices/', blank=True, null=True)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='unpaid')
     is_paid = models.BooleanField(default=False) # Šis laukas bus palaipsniui naikinamas
