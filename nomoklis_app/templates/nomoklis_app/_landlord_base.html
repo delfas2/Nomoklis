@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="lt">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,14 +9,33 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        .sidebar-active { background-color: #eff6ff; color: #1d4ed8; font-weight: 600; }
-        .tab-active { border-bottom-color: #3b82f6; color: #1e40af; font-weight: 600; }
-        #modal-backdrop.hidden { display: none; }
-        [x-cloak] { display: none !important; }
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .sidebar-active {
+            background-color: #eff6ff;
+            color: #1d4ed8;
+            font-weight: 600;
+        }
+
+        .tab-active {
+            border-bottom-color: #3b82f6;
+            color: #1e40af;
+            font-weight: 600;
+        }
+
+        #modal-backdrop.hidden {
+            display: none;
+        }
+
+        [x-cloak] {
+            display: none !important;
+        }
     </style>
     {% block extra_head %}{% endblock %}
 </head>
+
 <body class="bg-gray-100">
 
     <div x-data="{ open: false }" class="flex h-screen bg-gray-100">
@@ -33,7 +53,18 @@
         </div>
     </div>
 
-    {% block modals %}{% endblock %}
+    {% block modals %}
+    <!-- Modal Backdrop -->
+    <div id="modal-backdrop"
+        class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity hidden z-50 flex items-center justify-center"
+        aria-hidden="true">
+        <div id="modal-content"
+            class="bg-white rounded-lg overflow-hidden shadow-xl transform transition-all sm:max-w-lg sm:w-full">
+            <!-- Modal content will be injected here via JS -->
+        </div>
+    </div>
+    {% endblock %}
     {% block extra_js %}{% endblock %}
 </body>
+
 </html>

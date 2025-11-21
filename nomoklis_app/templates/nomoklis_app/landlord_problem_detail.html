@@ -25,7 +25,8 @@
                     <dd class="mt-2 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                         {% for image in problem.images.all %}
                         <a href="{{ image.image.url }}" target="_blank">
-                            <img src="{{ image.image.url }}" alt="Problemos nuotrauka" class="rounded-lg object-cover h-24 w-full">
+                            <img src="{{ image.image.url }}" alt="Problemos nuotrauka"
+                                class="rounded-lg object-cover h-24 w-full">
                         </a>
                         {% empty %}
                         <p class="text-sm text-gray-500 col-span-full">Nuotraukų nepateikta.</p>
@@ -41,23 +42,32 @@
             <form method="post" class="space-y-4">
                 {% csrf_token %}
                 <div>
-                    <label for="{{ form.status.id_for_label }}" class="block text-sm font-medium text-gray-700">Būsena</label>
+                    <p class="text-sm text-gray-500 mb-1">Pasirinkite tinkamą būseną</p>
+                    <label for="{{ form.status.id_for_label }}"
+                        class="block text-sm font-medium text-gray-700">Būsena</label>
                     {{ form.status }}
                 </div>
                 <div>
-                    <label for="{{ form.resolution_costs.id_for_label }}" class="block text-sm font-medium text-gray-700">Išsprendimo išlaidos (€)</label>
+                    <label for="{{ form.resolution_costs.id_for_label }}"
+                        class="block text-sm font-medium text-gray-700">Išsprendimo išlaidos (€)</label>
                     {{ form.resolution_costs }}
                 </div>
                 <div>
-                    <label for="{{ form.paid_by.id_for_label }}" class="block text-sm font-medium text-gray-700">Kas apmokėjo?</label>
+                    <label for="{{ form.paid_by.id_for_label }}" class="block text-sm font-medium text-gray-700">Kas
+                        apmoka?</label>
                     {{ form.paid_by }}
+                    <p id="tenant-payment-notice" class="text-sm text-blue-600 mt-1 hidden">Bus įtraukta į artimiausią
+                        sąskaitą</p>
                 </div>
                 <div>
-                    <label for="{{ form.comment.id_for_label }}" class="block text-sm font-medium text-gray-700">Pridėti komentarą</label>
+                    <label for="{{ form.comment.id_for_label }}" class="block text-sm font-medium text-gray-700">Pridėti
+                        komentarą</label>
                     {{ form.comment }}
                 </div>
                 <div class="pt-2">
-                    <button type="submit" class="w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700">Išsaugoti pakeitimus</button>
+                    <button type="submit"
+                        class="w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700">Išsaugoti
+                        pakeitimus</button>
                 </div>
             </form>
         </div>
@@ -83,4 +93,24 @@
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const paidBySelect = document.getElementById('{{ form.paid_by.id_for_label }}');
+        const notice = document.getElementById('tenant-payment-notice');
+
+        function toggleNotice() {
+            if (paidBySelect.value === 'nuomininkas') {
+                notice.classList.remove('hidden');
+            } else {
+                notice.classList.add('hidden');
+            }
+        }
+
+        if (paidBySelect) {
+            paidBySelect.addEventListener('change', toggleNotice);
+            toggleNotice(); // Run on load
+        }
+    });
+</script>
 {% endblock %}

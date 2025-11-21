@@ -20,3 +20,8 @@ def unread_messages_count(request):
             'notification_count': notification_count
         }
     return {'unread_count': 0, 'notification_count': 0}
+
+def simulated_date_context(request):
+    return {
+        'simulated_date': request.session.get('simulated_date')
+    }

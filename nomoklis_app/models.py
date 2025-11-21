@@ -301,8 +301,9 @@ class ProblemReport(models.Model):
         choices=PAID_BY_CHOICES,
         null=True,
         blank=True,
-        verbose_name="Kas apmokėjo?"
+        verbose_name="Kas apmoka?"
     )
+    invoice = models.ForeignKey('Invoice', on_delete=models.SET_NULL, null=True, blank=True, related_name='problem_reports', verbose_name="Sąskaita")
 
     def __str__(self):
         return f"Problema objekte {self.lease.property.street}"
@@ -370,6 +371,7 @@ class Invoice(models.Model):
     invoice_file = models.FileField(upload_to='invoices/', blank=True, null=True)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='unpaid')
     is_paid = models.BooleanField(default=False) # Šis laukas bus palaipsniui naikinamas
+    period_date = models.DateField(null=True, blank=True, help_text="Mėnuo, už kurį išrašyta sąskaita (visada 1-a diena)")
 
     def __str__(self):
         return f"Invoice for {self.lease} on {self.invoice_date}"

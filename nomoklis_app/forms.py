@@ -281,7 +281,7 @@ class UtilityBillForm(forms.ModelForm):
             'amount': forms.NumberInput(attrs={'class': 'w-full border-gray-300 rounded-md', 'placeholder': '0.00'}),
         }
 
-UtilityBillFormSet = forms.formset_factory(UtilityBillForm, extra=3)
+UtilityBillFormSet = forms.formset_factory(UtilityBillForm, extra=3, can_delete=True)
 
 # nomoklis_app/forms.py
 
