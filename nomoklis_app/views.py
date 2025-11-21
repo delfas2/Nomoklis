@@ -13,7 +13,7 @@ from django.contrib.auth.models import User
 from .models import ChatRoom,UtilityBill,Profile, Invoice, MeterReading, ChatMessage, Property, ProblemUpdate, PropertyImage, Lease, TenantReview, PropertyReview, RentalRequest, ProblemReport, ProblemImage, SupportTicket, SupportTicketUpdate, SystemSettings
 from django.shortcuts import get_object_or_404
 from django.db.models import Sum, Count, Max, Q, F
-from django.db.models.functions import TruncMonth
+from django.db.models.functions import TruncMonth, Coalesce
 from django.contrib.auth.decorators import login_required, user_passes_test
 from datetime import datetime, timedelta
 from django.utils import timezone
@@ -244,6 +244,13 @@ def stats_view(request):
     # FILTRO IR SKIRTUKŲ LOGIKA
     # ==================================================================
     selected_property_id = request.GET.get('property_id')
+    # Year filter for profitability tab
+    selected_year = request.GET.get('year')
+    if selected_year and selected_year.isdigit():
+        selected_year = int(selected_year)
+    else:
+        selected_year = current_year
+    
     #Įsimename, kuris skirtukas turi būti aktyvus
     active_tab = request.GET.get('tab', 'overview')
     
@@ -267,22 +274,28 @@ def stats_view(request):
     overall_paid_invoices = Invoice.objects.filter(lease__property__owner=user, status='paid', invoice_date__year=current_year)
     overall_problems = ProblemReport.objects.filter(lease__property__owner=user, created_at__year=current_year, resolution_costs__isnull=False)
     
-    total_gross_income = overall_paid_invoices.aggregate(total=Sum('amount'))['total'] or 0
+    total_gross_income = overall_paid_invoices.annotate(
+        effective_rent=Coalesce('rent_amount', 'amount')
+    ).aggregate(total=Sum('effective_rent'))['total'] or 0
     landlord_expenses = overall_problems.filter(paid_by='nuomotojas').aggregate(total=Sum('resolution_costs'))['total'] or 0
     total_annual_income = total_gross_income - landlord_expenses
     monthly_average_income = total_annual_income / 12 if total_annual_income > 0 else 0
-    total_expenses_for_chart = overall_problems.aggregate(total=Sum('resolution_costs'))['total'] or 0
+    total_expenses_for_chart = overall_problems.filter(paid_by='nuomotojas').aggregate(total=Sum('resolution_costs'))['total'] or 0
+
     
     income_by_month_overall = (
-        overall_paid_invoices.annotate(month=TruncMonth('invoice_date')).values('month')
-        .annotate(total_income=Sum('amount')).order_by('month')
+        overall_paid_invoices.annotate(
+            period_month=TruncMonth(Coalesce('period_date', 'invoice_date')),
+            effective_rent=Coalesce('rent_amount', 'amount')
+        ).values('period_month')
+        .annotate(total_income=Sum('effective_rent')).order_by('period_month')
     )
     # Naudojame lietuviškus mėnesius
-    income_labels = [LITHUANIAN_MONTHS[d['month'].month] for d in income_by_month_overall]
+    income_labels = [LITHUANIAN_MONTHS[d['period_month'].month] for d in income_by_month_overall]
     income_data = [float(d['total_income'] or 0) for d in income_by_month_overall]
 
     expenses_by_type_overall = (
-        overall_problems.values('problem_type').annotate(total_costs=Sum('resolution_costs')).order_by('-total_costs')
+        overall_problems.filter(paid_by='nuomotojas').values('problem_type').annotate(total_costs=Sum('resolution_costs')).order_by('-total_costs')
     )
     problem_type_dict = dict(ProblemReport.PROBLEM_TYPE_CHOICES)
     expenses_labels = [problem_type_dict.get(item['problem_type'], 'Kita') for item in expenses_by_type_overall]
@@ -291,16 +304,51 @@ def stats_view(request):
     # ==================================================================
     # TAB 2: Pelningumas (ATNAUJINTA LOGIKA)
     # ==================================================================
-    months = [date(current_year, m, 1) for m in range(1, 13)]
+    # Get all available years for the year selector from both period_date and invoice_date
+    invoices_for_years = Invoice.objects.filter(lease__property__owner=user)
+    
+    years_from_period = set(
+        inv.period_date.year for inv in invoices_for_years 
+        if inv.period_date
+    )
+    years_from_invoice = set(
+        inv.invoice_date.year for inv in invoices_for_years 
+        if inv.invoice_date
+    )
+    available_years = sorted(years_from_period | years_from_invoice, reverse=True)
+    
+    months = [date(selected_year, m, 1) for m in range(1, 13)]
     monthly_performance = []
 
+    # Filter by selected year for profitability tab - use period_date or fallback to invoice_date
+    profitability_paid_invoices = Invoice.objects.filter(
+        lease__property__owner=user, 
+        status='paid'
+    ).filter(
+        Q(period_date__year=selected_year) | Q(period_date__isnull=True, invoice_date__year=selected_year)
+    )
+    profitability_problems = ProblemReport.objects.filter(
+        lease__property__owner=user, 
+        created_at__year=selected_year, 
+        resolution_costs__isnull=False,
+        paid_by='nuomotojas'  # Only landlord-paid expenses
+    )
+    
+    # Apply property filter if selected
+    if selected_property_id and selected_property_id.isdigit():
+        profitability_paid_invoices = profitability_paid_invoices.filter(lease__property_id=selected_property_id)
+        profitability_problems = profitability_problems.filter(lease__property_id=selected_property_id)
+    
     income_by_month = {
-        item['month'].strftime('%Y-%m'): item['total']
-        for item in paid_invoices_qs.annotate(month=TruncMonth('invoice_date')).values('month').annotate(total=Sum('amount'))
+        item['period_month'].strftime('%Y-%m'): item['total']
+        for item in profitability_paid_invoices.annotate(
+            period_month=TruncMonth(Coalesce('period_date', 'invoice_date')),
+            effective_rent=Coalesce('rent_amount', 'amount')
+        ).values('period_month').annotate(total=Sum('effective_rent'))
     }
     expenses_by_month = {
         item['month'].strftime('%Y-%m'): item['total']
-        for item in problem_reports_qs.annotate(month=TruncMonth('created_at')).values('month').annotate(total=Sum('resolution_costs'))
+        for item in profitability_problems.annotate(month=TruncMonth('created_at')).values('month').annotate(total=Sum('resolution_costs'))
     }
 
     for month_date in months:
@@ -363,6 +411,8 @@ def stats_view(request):
         'all_user_properties': all_user_properties,
         'selected_property_id': selected_property_id,
         'active_tab': active_tab, # Perduodame aktyvų skirtuką
+        'available_years': available_years,
+        'selected_year': selected_year,
         # Tab 1
         'total_annual_income': total_annual_income, 'monthly_average_income': monthly_average_income,
         'occupancy_rate': occupancy_rate, 'rented_properties_count': rented_properties_count,
@@ -2380,16 +2430,3 @@ def admin_support_ticket_detail_view(request, ticket_id):
         'active_page': 'support_tickets',
     }
     return render(request, 'nomoklis_app/admin_support_ticket_detail.html', context)
-
-@require_POST
-def set_simulated_date_view(request):
-    date_str = request.POST.get('simulated_date')
-    if date_str:
-        request.session['simulated_date'] = date_str
-        messages.success(request, f"Laikas sėkmingai pakeistas į {date_str}")
-    else:
-        if 'simulated_date' in request.session:
-            del request.session['simulated_date']
-            messages.success(request, "Grįžta į realų laiką")
-            
-    return redirect(request.META.get('HTTP_REFERER', 'index'))

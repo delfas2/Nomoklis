@@ -54,6 +54,7 @@ def generate_invoice(lease, target_date=None, utility_items=None):
 
     # --- INVOICE DATA PREPARATION ---
     total_amount = 0
+    rent_amount = 0  # Track rent separately for statistics
     invoice_items = []
     
     is_first_invoice = not lease.invoices.exists()
@@ -82,12 +83,14 @@ def generate_invoice(lease, target_date=None, utility_items=None):
             days_to_pay_for = days_in_month - lease.start_date.day + 1
             proportional_rent = (lease.rent_price / days_in_month) * days_to_pay_for
             total_amount += proportional_rent
+            rent_amount = proportional_rent  # For statistics
             invoice_items.append({
                 'name': f"Nuoma už {LITHUANIAN_MONTHS[invoice_date_context.month]} mėn. ({days_to_pay_for} d.)",
                 'price': f"{proportional_rent:.2f}"
             })
         else: # If lease starts on the 1st
             total_amount += lease.rent_price
+            rent_amount = lease.rent_price  # For statistics
             invoice_items.append({
                 'name': f"Nuoma už {LITHUANIAN_MONTHS[invoice_date_context.month]} mėn.",
                 'price': f"{lease.rent_price:.2f}"
@@ -107,6 +110,7 @@ def generate_invoice(lease, target_date=None, utility_items=None):
             due_date = today.replace(day=last_day)
 
         total_amount = lease.rent_price
+        rent_amount = lease.rent_price  # For statistics
         invoice_items.append({
             'name': f"Nuoma už {LITHUANIAN_MONTHS[invoice_date_context.month]} mėn.",
             'price': f"{lease.rent_price:.2f}"
@@ -200,6 +204,7 @@ def generate_invoice(lease, target_date=None, utility_items=None):
         invoice_date=today,
         due_date=due_date,
         amount=total_amount,
+        rent_amount=rent_amount,
         period_date=current_period_date
     )
     
