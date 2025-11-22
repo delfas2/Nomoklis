@@ -98,4 +98,5 @@ urlpatterns = [
     path('terms-and-conditions/', views.terms_and_conditions_view, name='terms_and_conditions'),
     path('privacy-policy/', views.privacy_policy_view, name='privacy_policy'),
 
+    path('panel/statistics/', views.admin_detailed_stats, name='admin_detailed_stats'),
 ]

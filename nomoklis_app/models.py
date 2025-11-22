@@ -59,6 +59,7 @@ class Property(models.Model):
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     is_paid_listing = models.BooleanField(default=False, verbose_name="Apmokėtas skelbimas")
     paid_at = models.DateTimeField(null=True, blank=True, verbose_name="Apmokėjimo data")
+    activation_price = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True, verbose_name="Sumokėta už aktyvavimą")
 
     def __str__(self):
         address = f"{self.street} {self.house_number}"
@@ -428,7 +429,16 @@ class SupportTicketUpdate(models.Model):
 
 class SystemSettings(models.Model):
     paid_listing_enabled = models.BooleanField(default=False, verbose_name="Įjungti mokamus skelbimus")
-    listing_price = models.DecimalField(max_digits=6, decimal_places=2, default=0.00, verbose_name="Skelbimo aktyvavimo kaina")
+    listing_price = models.DecimalField(max_digits=6, decimal_places=2, default=0.00, verbose_name="Skelbimo aktyvavimo kaina (1-2 objektai)")
+    listing_price_tier_2 = models.DecimalField(max_digits=6, decimal_places=2, default=0.00, verbose_name="Skelbimo aktyvavimo kaina (3-4 objektai)")
+    listing_price_tier_3 = models.DecimalField(max_digits=6, decimal_places=2, default=0.00, verbose_name="Skelbimo aktyvavimo kaina (5+ objektai)")
+    
+    enable_fixed_pricing = models.BooleanField(default=True, verbose_name="Įjungti fiksuotą kainodarą")
+    enable_percentage_pricing = models.BooleanField(default=False, verbose_name="Įjungti procentinę kainodarą")
+    
+    listing_percentage_tier_1 = models.DecimalField(max_digits=5, decimal_places=2, default=0.00, verbose_name="Procentas (1-2 objektai)")
+    listing_percentage_tier_2 = models.DecimalField(max_digits=5, decimal_places=2, default=0.00, verbose_name="Procentas (3-4 objektai)")
+    listing_percentage_tier_3 = models.DecimalField(max_digits=5, decimal_places=2, default=0.00, verbose_name="Procentas (5+ objektai)")
 
     def __str__(self):
         return "Sistemos nustatymai"
