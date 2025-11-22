@@ -335,7 +335,25 @@ from .models import SystemSettings
 class SystemSettingsForm(forms.ModelForm):
     class Meta:
         model = SystemSettings
-        fields = ['paid_listing_enabled', 'listing_price']
+        fields = [
+            'paid_listing_enabled', 
+            'enable_fixed_pricing', 'enable_percentage_pricing',
+            'listing_price', 'listing_price_tier_2', 'listing_price_tier_3',
+            'listing_percentage_tier_1', 'listing_percentage_tier_2', 'listing_percentage_tier_3'
+        ]
         widgets = {
+            'enable_fixed_pricing': forms.CheckboxInput(attrs={
+                'class': 'h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500',
+                'x-model': 'enableFixed'
+            }),
+            'enable_percentage_pricing': forms.CheckboxInput(attrs={
+                'class': 'h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500',
+                'x-model': 'enablePercentage'
+            }),
             'listing_price': forms.NumberInput(attrs={'class': 'w-full border-gray-300 rounded-md'}),
+            'listing_price_tier_2': forms.NumberInput(attrs={'class': 'w-full border-gray-300 rounded-md'}),
+            'listing_price_tier_3': forms.NumberInput(attrs={'class': 'w-full border-gray-300 rounded-md'}),
+            'listing_percentage_tier_1': forms.NumberInput(attrs={'class': 'w-full border-gray-300 rounded-md', 'step': '0.01'}),
+            'listing_percentage_tier_2': forms.NumberInput(attrs={'class': 'w-full border-gray-300 rounded-md', 'step': '0.01'}),
+            'listing_percentage_tier_3': forms.NumberInput(attrs={'class': 'w-full border-gray-300 rounded-md', 'step': '0.01'}),
         }

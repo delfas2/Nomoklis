@@ -607,6 +607,38 @@ def activate_property_payment(request, property_id):
         messages.error(request, 'Šiam objektui nereikalingas aktyvavimas arba jis jau aktyvuotas.')
         return redirect('my_properties')
 
+    # Skaičiuojame vartotojo objektų kiekį, kad nustatytume kainą
+    user_properties_count = Property.objects.filter(owner=request.user).count()
+    
+    price = Decimal('0.00')
+    
+    # 1. Pridedame procentinę dalį, jei įjungta
+    if system_settings.enable_percentage_pricing:
+        if user_properties_count <= 2:
+            percentage = system_settings.listing_percentage_tier_1
+        elif user_properties_count <= 4:
+            percentage = system_settings.listing_percentage_tier_2
+        else:
+            percentage = system_settings.listing_percentage_tier_3
+        
+        # Skaičiuojame kainą nuo nuomos sumos
+        price += prop.rent_price * (percentage / 100)
+
+    # 2. Pridedame fiksuotą dalį, jei įjungta
+    if system_settings.enable_fixed_pricing:
+        if user_properties_count <= 2:
+            fixed_price = system_settings.listing_price
+        elif user_properties_count <= 4:
+            fixed_price = system_settings.listing_price_tier_2
+        else:
+            fixed_price = system_settings.listing_price_tier_3
+        
+        price += fixed_price
+
+    # Užtikriname, kad kaina nebūtų neigiama ir turėtų bent minimalią vertę (pvz. 0.50 EUR), jei Stripe reikalauja
+    if price < Decimal('0.50'):
+        price = Decimal('0.50')
+
     stripe.api_key = settings.STRIPE_SECRET_KEY
     try:
         checkout_session = stripe.checkout.Session.create(
@@ -616,9 +648,9 @@ def activate_property_payment(request, property_id):
                     'price_data': {
                         'currency': 'eur',
                         'product_data': {
-                            'name': f'Skelbimo aktyvavimas: {prop}',
+                            'name': f'Skelbimo aktyvavimas: {prop.street} {prop.house_number}',
                         },
-                        'unit_amount': int(system_settings.listing_price * 100),
+                        'unit_amount': int(price * 100),
                     },
                     'quantity': 1,
                 }
@@ -1809,14 +1841,19 @@ def delete_property_image(request, image_id):
     
     return JsonResponse({'status': 'success', 'message': 'Nuotrauka sėkmingai ištrinta.'})
 
-@login_required(login_url='/login/')
-@user_passes_test(lambda u: u.is_superuser)
+@login_required(login_url='/accounts/login/')
 def admin_dashboard(request):
     """
     Atvaizduoja administratoriaus panelės puslapį su realiais duomenimis.
     Prieinamas tik prisijungusiems supervartotojams.
     """
+    # Manual superuser check to prevent redirect loop
+    if not request.user.is_superuser:
+        messages.error(request, 'Jūs neturite administravimo teisių.')
+        return redirect('dashboard_redirect')
+    
     now = get_current_time(request)
+
     current_month = now.month
     current_year = now.year
 
@@ -1828,14 +1865,11 @@ def admin_dashboard(request):
     ).aggregate(total=Sum('amount'))['total'] or 0
 
     # 2. Pajamos iš skelbimų aktyvavimo
-    system_settings = SystemSettings.objects.first()
-    listing_price = system_settings.listing_price if system_settings else Decimal('0.00')
-    paid_listings_count = Property.objects.filter(
+    listing_income = Property.objects.filter(
         is_paid_listing=True,
         paid_at__month=current_month,
         paid_at__year=current_year
-    ).count()
-    listing_income = paid_listings_count * listing_price
+    ).aggregate(total=Sum('activation_price'))['total'] or 0
 
     total_monthly_income = (invoice_income + listing_income)
 
@@ -1843,18 +1877,26 @@ def admin_dashboard(request):
     Atvaizduoja administratoriaus panelės puslapį su realiais duomenimis.
     Prieinamas tik prisijungusiems supervartotojams.
     """
-    # --- Duomenys statistikoms ir grafikams (šis kodas lieka toks pat) ---
+    # --- Duomenys statistikoms ir grafikams ---
     six_months_ago = get_current_time(request) - timedelta(days=180)
-    user_growth_data = User.objects.filter(date_joined__gte=six_months_ago) \
-        .annotate(month=TruncMonth('date_joined')) \
-        .values('month') \
-        .annotate(count=Count('id')) \
-        .order_by('month')
-    revenue_data = Invoice.objects.filter(is_paid=True, invoice_date__gte=six_months_ago) \
-        .annotate(month=TruncMonth('invoice_date')) \
-        .values('month') \
-        .annotate(total=Sum('amount')) \
-        .order_by('month')
+    
+    # Nuomotojų augimas
+    landlord_growth_data = User.objects.filter(
+        date_joined__gte=six_months_ago,
+        profile__user_type='nuomotojas'
+    ).annotate(month=TruncMonth('date_joined')) \
+    .values('month') \
+    .annotate(count=Count('id')) \
+    .order_by('month')
+
+    # Nuomininkų augimas
+    tenant_growth_data = User.objects.filter(
+        date_joined__gte=six_months_ago,
+        profile__user_type='nuomininkas'
+    ).annotate(month=TruncMonth('date_joined')) \
+    .values('month') \
+    .annotate(count=Count('id')) \
+    .order_by('month')
     
     months_labels = []
     current_date = get_current_time(request).replace(day=1)
@@ -1862,19 +1904,19 @@ def admin_dashboard(request):
         month_date = current_date - timedelta(days=i*30)
         months_labels.append(month_date.strftime("%B"))
     
-    user_chart_data = [0] * 6
-    for entry in user_growth_data:
+    landlord_chart_data = [0] * 6
+    for entry in landlord_growth_data:
         month_name = entry['month'].strftime("%B")
         if month_name in months_labels:
             index = months_labels.index(month_name)
-            user_chart_data[index] = entry['count']
+            landlord_chart_data[index] = entry['count']
     
-    revenue_chart_data = [0.0] * 6
-    for entry in revenue_data:
+    tenant_chart_data = [0] * 6
+    for entry in tenant_growth_data:
         month_name = entry['month'].strftime("%B")
         if month_name in months_labels:
             index = months_labels.index(month_name)
-            revenue_chart_data[index] = float(entry['total'])
+            tenant_chart_data[index] = entry['count']
 
     # --- NAUJA DALIS: Duomenys "Naujausiems įvykiams" ---
     recent_users = User.objects.order_by('-date_joined')[:5]
@@ -1904,10 +1946,10 @@ def admin_dashboard(request):
         'monthly_income': total_monthly_income,
         'active_page': 'dashboard',
         # Duomenys grafikams
-        'user_growth_labels': json.dumps(months_labels),
-        'user_growth_data': json.dumps(user_chart_data),
-        'revenue_labels': json.dumps(months_labels),
-        'revenue_data': json.dumps(revenue_chart_data),
+        'landlord_growth_labels': json.dumps(months_labels),
+        'landlord_growth_data': json.dumps(landlord_chart_data),
+        'tenant_growth_labels': json.dumps(months_labels),
+        'tenant_growth_data': json.dumps(tenant_chart_data),
         
         # Duomenys įvykių blokams
         'recent_events': sorted_events[:5], # Paimame 5 naujausius įvykius
@@ -1915,19 +1957,38 @@ def admin_dashboard(request):
     }
     return render(request, 'nomoklis_app/admin_dashboard.html', context)
 
-@login_required(login_url='/login/')
-@user_passes_test(lambda u: u.is_superuser)
+@login_required(login_url='/accounts/login/')
+@user_passes_test(lambda u: u.is_superuser, login_url='/accounts/login/')
 def admin_users_list(request):
     # Naudojame .select_related('profile'), kad išvengtume papildomų užklausų į DB cikle
     all_users = User.objects.all().select_related('profile').order_by('-date_joined')
+    
+    landlords = []
+    tenants = []
+    others = []
+    
+    for user in all_users:
+        # Check if user has profile (using hasattr because related_name might not be set or profile might be missing)
+        if hasattr(user, 'profile'):
+            if user.profile.user_type == 'nuomotojas':
+                landlords.append(user)
+            elif user.profile.user_type == 'nuomininkas':
+                tenants.append(user)
+            else:
+                others.append(user)
+        else:
+            others.append(user)
+
     context = {
-        'users': all_users,
+        'landlords': landlords,
+        'tenants': tenants,
+        'others': others,
         'active_page': 'users', # Kad sidebar'e būtų aktyvuota teisinga nuoroda
     }
     return render(request, 'nomoklis_app/admin_users_list.html', context)
 
 @login_required(login_url='/login/')
-@user_passes_test(lambda u: u.is_superuser)
+@user_passes_test(lambda u: u.is_superuser, login_url='/accounts/login/')
 def admin_properties_list(request):
     """
     Atvaizduoja NT objektų sąrašą administratoriaus panelėje su paieška ir filtrais.
@@ -1956,7 +2017,7 @@ def admin_properties_list(request):
     return render(request, 'nomoklis_app/admin_properties_list.html', context)
 
 @login_required
-@user_passes_test(lambda u: u.is_superuser)
+@user_passes_test(lambda u: u.is_superuser, login_url='/accounts/login/')
 @require_POST
 def admin_update_property_status(request, property_id):
     """
@@ -1977,7 +2038,7 @@ def admin_update_property_status(request, property_id):
     return redirect('admin_properties_list')
 
 @login_required
-@user_passes_test(lambda u: u.is_superuser)
+@user_passes_test(lambda u: u.is_superuser, login_url='/accounts/login/')
 @require_POST
 def admin_delete_property(request, property_id):
     """
@@ -1991,7 +2052,7 @@ def admin_delete_property(request, property_id):
 
 
 @login_required
-@user_passes_test(lambda u: u.is_superuser)
+@user_passes_test(lambda u: u.is_superuser, login_url='/accounts/login/')
 def admin_system_settings_view(request):
     # Gauname vienintelį nustatymų objektą arba sukuriame naują, jei jo nėra
     settings, created = SystemSettings.objects.get_or_create()
@@ -2147,9 +2208,15 @@ def stripe_webhook_view(request):
                     if not prop.is_paid_listing:
                         prop.is_paid_listing = True
                         prop.paid_at = get_current_time(request) # Išsaugome apmokėjimo datą
+                        
+                        # Išsaugome sumokėtą sumą (konvertuojame iš centų į eurus)
+                        amount_total = session.get('amount_total')
+                        if amount_total:
+                            prop.activation_price = Decimal(amount_total) / 100
+                        
                         # Būsena 'paruostas' jau turėtų būti nustatyta prieš mokėjimą
-                        prop.save(update_fields=['is_paid_listing', 'paid_at'])
-                        logger.info(f"Objektas {prop.id} sėkmingai pažymėtas kaip apmokėtas.")
+                        prop.save(update_fields=['is_paid_listing', 'paid_at', 'activation_price'])
+                        logger.info(f"Objektas {prop.id} sėkmingai pažymėtas kaip apmokėtas. Kaina: {prop.activation_price}")
 
                     # Sukuriame pranešimą nuomotojui
                     Notification.objects.create(
@@ -2380,7 +2447,7 @@ def support_ticket_detail_view(request, ticket_id):
     return render(request, 'nomoklis_app/support_ticket_detail.html', context)
 
 @login_required
-@user_passes_test(lambda u: u.is_superuser)
+@user_passes_test(lambda u: u.is_superuser, login_url='/accounts/login/')
 def admin_support_ticket_list_view(request):
     tickets = SupportTicket.objects.all().order_by('-created_at')
     context = {
@@ -2390,7 +2457,7 @@ def admin_support_ticket_list_view(request):
     return render(request, 'nomoklis_app/admin_support_ticket_list.html', context)
 
 @login_required
-@user_passes_test(lambda u: u.is_superuser)
+@user_passes_test(lambda u: u.is_superuser, login_url='/accounts/login/')
 def admin_support_ticket_detail_view(request, ticket_id):
     ticket = get_object_or_404(SupportTicket, id=ticket_id)
     updates = ticket.updates.all()
@@ -2430,3 +2497,38 @@ def admin_support_ticket_detail_view(request, ticket_id):
         'active_page': 'support_tickets',
     }
     return render(request, 'nomoklis_app/admin_support_ticket_detail.html', context)
+
+@login_required(login_url='/accounts/login/')
+def admin_detailed_stats(request):
+    """
+    Atvaizduoja detalią statistiką administratoriui.
+    """
+    if not request.user.is_superuser:
+        messages.error(request, 'Jūs neturite administravimo teisių.')
+        return redirect('dashboard_redirect')
+
+    # 1. Objektų kiekis pagal tipą
+    properties_by_type_query = Property.objects.values('property_type').annotate(count=Count('id')).order_by('-count')
+    type_labels = [dict(Property.PROPERTY_TYPE_CHOICES).get(item['property_type'], item['property_type']) for item in properties_by_type_query]
+    type_data = [item['count'] for item in properties_by_type_query]
+
+    # 2. Objektų pasiskirstymas pagal miestus (Top 5)
+    properties_by_city_query = Property.objects.values('city').annotate(count=Count('id')).order_by('-count')[:5]
+    city_labels = [item['city'] for item in properties_by_city_query]
+    city_data = [item['count'] for item in properties_by_city_query]
+
+    # 3. Nuomos sutarčių būsenos
+    lease_status_query = Lease.objects.values('status').annotate(count=Count('id')).order_by('-count')
+    status_labels = [dict(Lease.STATUS_CHOICES).get(item['status'], item['status']) for item in lease_status_query]
+    status_data = [item['count'] for item in lease_status_query]
+
+    context = {
+        'active_page': 'statistics',
+        'type_labels': json.dumps(type_labels),
+        'type_data': json.dumps(type_data),
+        'city_labels': json.dumps(city_labels),
+        'city_data': json.dumps(city_data),
+        'status_labels': json.dumps(status_labels),
+        'status_data': json.dumps(status_data),
+    }
+    return render(request, 'nomoklis_app/admin_detailed_stats.html', context)
