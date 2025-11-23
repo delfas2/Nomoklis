@@ -427,7 +427,7 @@ def stats_view(request):
     }
     return render(request, 'nomoklis_app/stats.html', context)
 
-from .utils import encode_room_name, decode_room_name
+from .utils import encode_room_name, decode_room_name, encrypt_id, decrypt_id
 
 @login_required
 def landlord_contracts_page(request):
@@ -1090,7 +1090,12 @@ def landlord_problem_list_view(request):
     return render(request, 'nomoklis_app/landlord_problem_list.html', context)
 
 @login_required
-def landlord_problem_detail_view(request, problem_id):
+def landlord_problem_detail_view(request, encrypted_id):
+    problem_id = decrypt_id(encrypted_id)
+    if not problem_id:
+        messages.error(request, "Neteisinga nuoroda.")
+        return redirect('landlord_problem_list')
+
     problem = get_object_or_404(ProblemReport, id=problem_id, lease__property__owner=request.user)
     updates = problem.updates.all()
 
@@ -1110,7 +1115,7 @@ def landlord_problem_detail_view(request, problem_id):
                 )
 
             messages.success(request, "Problemos informacija atnaujinta.")
-            return redirect('landlord_problem_detail', problem_id=problem.id)
+            return redirect('landlord_problem_detail', encrypted_id=encrypted_id)
     else: # GET metodas
         # Formą užpildome esamomis problemos reikšmėmis
         form = LandlordProblemUpdateForm(instance=problem)
@@ -1125,7 +1130,12 @@ def landlord_problem_detail_view(request, problem_id):
     return render(request, 'nomoklis_app/landlord_problem_detail.html', context)
 
 @login_required
-def tenant_problem_detail_view(request, problem_id):
+def tenant_problem_detail_view(request, encrypted_id):
+    problem_id = decrypt_id(encrypted_id)
+    if not problem_id:
+        messages.error(request, "Neteisinga nuoroda.")
+        return redirect('problem_list')
+
     problem = get_object_or_404(ProblemReport, id=problem_id, lease__tenant=request.user)
     updates = problem.updates.all()
 
@@ -1137,7 +1147,7 @@ def tenant_problem_detail_view(request, problem_id):
             new_update.author = request.user
             new_update.save()
             messages.success(request, "Jūsų komentaras pridėtas.")
-            return redirect('tenant_problem_detail', problem_id=problem.id)
+            return redirect('tenant_problem_detail', encrypted_id=encrypted_id)
     else: # GET metodas
         form = TenantCommentForm()
 
@@ -1168,10 +1178,11 @@ def mark_notification_as_read(request, notification_id):
     
     # Nustatome, kur nukreipti vartotoją
     if isinstance(notification.content_object, ProblemReport):
+        encrypted_id = encrypt_id(notification.object_id)
         if request.user.profile.user_type == 'nuomotojas':
-            return redirect('landlord_problem_detail', problem_id=notification.object_id)
+            return redirect('landlord_problem_detail', encrypted_id=encrypted_id)
         else:
-            return redirect('tenant_problem_detail', problem_id=notification.object_id)
+            return redirect('tenant_problem_detail', encrypted_id=encrypted_id)
             
     # --- PAKEISTA DALIS ---
     elif isinstance(notification.content_object, RentalRequest):

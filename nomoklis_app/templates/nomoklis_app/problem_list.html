@@ -3,45 +3,60 @@
 {% block title %}Mano gedimai{% endblock %}
 
 {% block content %}
-    <div class="max-w-4xl mx-auto">
-        <div class="flex justify-between items-center mb-6">
-            <h1 class="text-2xl font-bold text-gray-800">Mano užregistruoti gedimai</h1>
-            <a href="{% url 'report_problem' %}" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300">Registruoti naują</a>
-        </div>
+{% load encryption_tags %}
 
-        <div class="bg-white rounded-lg shadow-md overflow-hidden">
-            <ul class="divide-y divide-gray-200">
-                {% for problem in problems %}
-                <li class="p-4 hover:bg-gray-50">
-                    <a href="{% url 'tenant_problem_detail' problem.id %}" class="block">
-                        <div class="flex items-center justify-between">
-                            <p class="text-sm font-medium text-blue-600 truncate">{{ problem.lease.property.street }} - {{ problem.get_problem_type_display }}</p>
-                            <div class="ml-2 flex-shrink-0 flex">
-                                {% if problem.status == 'nauja' %}
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">Nauja</span>
-                                {% elif problem.status == 'vykdoma' %}
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Vykdoma</span>
-                                {% else %}
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Išspręsta</span>
-                                {% endif %}
-                            </div>
-                        </div>
-                        <div class="mt-2 sm:flex sm:justify-between">
-                            <div class="sm:flex">
-                                <p class="flex items-center text-sm text-gray-500">
-                                    {{ problem.description|truncatewords:20 }}
-                                </p>
-                            </div>
-                            <div class="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
-                                <p>Sukurta: {{ problem.created_at|date:"Y-m-d H:i" }}</p>
-                            </div>
-                        </div>
-                    </a>
-                </li>
-                {% empty %}
-                    <li class="p-6 text-center text-gray-500">Jūs neturite jokių užregistruotų gedimų.</li>
-                {% endfor %}
-            </ul>
-        </div>
+<div class="container mx-auto px-4 py-6">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold text-gray-800">Mano registruoti gedimai</h1>
+        <a href="{% url 'report_problem' %}"
+            class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-200">
+            Registruoti naują
+        </a>
     </div>
+
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+        {% if problems %}
+        <div class="divide-y divide-gray-200">
+            {% for problem in problems %}
+            <a href="{% url 'tenant_problem_detail' problem.id|encrypt_id %}"
+                class="block hover:bg-gray-50 transition duration-150 ease-in-out">
+                <div class="px-4 py-4 sm:px-6">
+                    <div class="flex items-center justify-between">
+                        <p class="text-sm font-medium text-blue-600 truncate">
+                            {{ problem.lease.property.street }} - {{ problem.get_problem_type_display }}
+                        </p>
+                        <div class="ml-2 flex-shrink-0 flex">
+                            {% if problem.status == 'nauja' %}
+                            <span
+                                class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">Nauja</span>
+                            {% elif problem.status == 'vykdoma' %}
+                            <span
+                                class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Vykdoma</span>
+                            {% else %}
+                            <span
+                                class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Išspręsta</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="mt-2 sm:flex sm:justify-between">
+                        <div class="sm:flex">
+                            <p class="flex items-center text-sm text-gray-500">
+                                {{ problem.description|truncatewords:20 }}
+                            </p>
+                        </div>
+                        <div class="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
+                            <p>Sukurta: {{ problem.created_at|date:"Y-m-d H:i" }}</p>
+                        </div>
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="p-6 text-center text-gray-500">
+            Jūs neturite jokių užregistruotų gedimų.
+        </div>
+        {% endif %}
+    </div>
+</div>
 {% endblock %}
