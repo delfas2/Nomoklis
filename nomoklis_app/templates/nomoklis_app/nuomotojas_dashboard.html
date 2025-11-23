@@ -3,110 +3,177 @@
 {% block title %}Nuomotojo Skydelis{% endblock %}
 
 {% block content %}
-    {% if messages %}
-        {% for message in messages %}
-        <div class="mb-4 p-4 rounded-md {% if message.tags == 'success' %} bg-green-100 text-green-800 {% elif message.tags == 'error' %} bg-red-100 text-red-800 {% else %} bg-blue-100 text-blue-800 {% endif %}" role="alert">
-            {{ message|safe }}
+{# Messages disabled per user request #}
+{# {% if messages %}
+{% for message in messages %}
+<div class="mb-4 p-4 rounded-md {% if message.tags == 'success' %} bg-green-100 text-green-800 {% elif message.tags == 'error' %} bg-red-100 text-red-800 {% else %} bg-blue-100 text-blue-800 {% endif %}"
+    role="alert">
+    {{ message|safe }}
+</div>
+{% endfor %}
+{% endif %} #}
+
+{% if pending_requests %}
+<section id="new-requests" class="mb-10">
+    <h2 class="text-xl font-semibold text-gray-700 mb-4">Naujos nuomos užklausos</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for req in pending_requests %}
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <img src="{{ req.property.images.first.image.url|default:'https://placehold.co/400x250/a0aec0/ffffff?text=Nėra+nuotraukos' }}"
+                alt="{{ req.property.street }}" class="w-full h-48 object-cover">
+            <div class="p-4">
+                <p class="text-sm text-gray-500">Gauta užklausa dėl</p>
+                <h3 class="font-bold text-lg text-gray-800">{{ req.property.street }}</h3>
+                <p class="text-sm text-gray-600 mb-4">Nuomininkas: <span class="font-semibold">{{
+                        req.tenant.get_full_name }}</span></p>
+                <button data-url="{% url 'rental_request_popup' req.id %}"
+                    class="open-request-btn w-full text-center bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700">
+                    Atidaryti
+                </button>
+            </div>
         </div>
         {% endfor %}
-    {% endif %}
+    </div>
+</section>
+{% endif %}
+<section id="summary">
+    <h2 class="text-xl font-semibold text-gray-700 mb-4">Bendra suvestinė</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="bg-white p-6 rounded-lg shadow-md flex items-center space-x-4">
+            <div class="bg-blue-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg"
+                    class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg></div>
+            <div>
+                <p class="text-sm text-gray-500">Viso turto objektų</p>
+                <p class="text-2xl font-bold text-gray-800">{{ total_properties }}</p>
+            </div>
+        </div>
+        <div class="bg-white p-6 rounded-lg shadow-md flex items-center space-x-4">
+            <div class="bg-green-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg"
+                    class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg></div>
+            <div>
+                <p class="text-sm text-gray-500">Išnuomota</p>
+                <p class="text-2xl font-bold text-gray-800">{{ rented_count }}</p>
+            </div>
+        </div>
+        <div class="bg-white p-6 rounded-lg shadow-md flex items-center space-x-4">
+            <div class="bg-yellow-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg"
+                    class="h-6 w-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                    stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg></div>
+            <div>
+                <p class="text-sm text-gray-500">Laisva</p>
+                <p class="text-2xl font-bold text-gray-800">{{ available_count }}</p>
+            </div>
+        </div>
+        <div class="bg-white p-6 rounded-lg shadow-md flex items-center space-x-4">
+            <div class="bg-indigo-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg"
+                    class="h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                    stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v.01M12 6v-1h4v1m-4 0H8v1h4v-1zm-2 10v-1h6v1h-6z" />
+                </svg></div>
+            <div>
+                <p class="text-sm text-gray-500">Laukiamos pajamos / mėn.</p>
+                <p class="text-2xl font-bold text-gray-800">{{ monthly_income|floatformat:"0" }} €</p>
+            </div>
+        </div>
+    </div>
+</section>
 
-    {% if pending_requests %}
-    <section id="new-requests" class="mb-10">
-        <h2 class="text-xl font-semibold text-gray-700 mb-4">Naujos nuomos užklausos</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {% for req in pending_requests %}
-            <div class="bg-white rounded-lg shadow-md overflow-hidden">
-                <img src="{{ req.property.images.first.image.url|default:'https://placehold.co/400x250/a0aec0/ffffff?text=Nėra+nuotraukos' }}" alt="{{ req.property.street }}" class="w-full h-48 object-cover">
-                <div class="p-4">
-                    <p class="text-sm text-gray-500">Gauta užklausa dėl</p>
-                    <h3 class="font-bold text-lg text-gray-800">{{ req.property.street }}</h3>
-                    <p class="text-sm text-gray-600 mb-4">Nuomininkas: <span class="font-semibold">{{ req.tenant.get_full_name }}</span></p>
-                    <button data-url="{% url 'rental_request_popup' req.id %}" class="open-request-btn w-full text-center bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700">
-                        Atidaryti
-                    </button>
+<section id="properties" class="mt-10">
+    <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-semibold text-gray-700">Mano turtas</h2>
+        <a href="{% url 'add_property' %}"
+            class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300 flex items-center space-x-2"><svg
+                xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd"
+                    d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
+                    clip-rule="evenodd" />
+            </svg><span>Pridėti naują</span></a>
+    </div>
+    <div class="border-b border-gray-200">
+        <nav class="-mb-px flex space-x-8" aria-label="Tabs"><button id="tab-rented"
+                class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 tab-active"
+                onclick="showTab('rented')">Išnuomota ({{ rented_count }})</button><button id="tab-available"
+                class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                onclick="showTab('available')">Laisva ({{ available_count }})</button></nav>
+    </div>
+    <div id="content-rented" class="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for property in rented_properties %}
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <img src="{{ property.images.first.image.url|default:'https://placehold.co/400x250/a0aec0/ffffff?text=Nėra+nuotraukos' }}"
+                alt="{{ property.street }}" class="w-full h-48 object-cover">
+            <div class="p-4">
+                <h3 class="font-bold text-lg text-gray-800">{{ property.street }}, {{ property.city }}</h3>
+                <p class="text-sm text-gray-500 mb-4">{{ property.get_property_type_display }}</p>
+                <div class="space-y-3 text-sm">
+                    {% if property.active_lease %}
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Nuomininkas:</span>
+                        <span class="font-semibold text-gray-800">{{ property.active_lease.tenant.get_full_name
+                            }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Nuomos kaina:</span>
+                        <span class="font-semibold text-green-600">{{ property.active_lease.rent_price|floatformat:"0"
+                            }} € / mėn.</span>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="mt-6 flex flex-wrap gap-2">
+                    <a href="{% url 'edit_property' property.id %}"
+                        class="flex-grow text-center bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300">Redaguoti</a>
                 </div>
             </div>
-            {% endfor %}
         </div>
-    </section>
-    {% endif %}
-    <section id="summary">
-        <h2 class="text-xl font-semibold text-gray-700 mb-4">Bendra suvestinė</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div class="bg-white p-6 rounded-lg shadow-md flex items-center space-x-4"><div class="bg-blue-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg></div><div><p class="text-sm text-gray-500">Viso turto objektų</p><p class="text-2xl font-bold text-gray-800">{{ total_properties }}</p></div></div>
-                <div class="bg-white p-6 rounded-lg shadow-md flex items-center space-x-4"><div class="bg-green-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></div><div><p class="text-sm text-gray-500">Išnuomota</p><p class="text-2xl font-bold text-gray-800">{{ rented_count }}</p></div></div>
-                <div class="bg-white p-6 rounded-lg shadow-md flex items-center space-x-4"><div class="bg-yellow-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></div><div><p class="text-sm text-gray-500">Laisva</p><p class="text-2xl font-bold text-gray-800">{{ available_count }}</p></div></div>
-                <div class="bg-white p-6 rounded-lg shadow-md flex items-center space-x-4"><div class="bg-indigo-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v.01M12 6v-1h4v1m-4 0H8v1h4v-1zm-2 10v-1h6v1h-6z" /></svg></div><div><p class="text-sm text-gray-500">Laukiamos pajamos / mėn.</p><p class="text-2xl font-bold text-gray-800">{{ monthly_income|floatformat:"0" }} €</p></div></div>
-        </div>
-    </section>
-
-    <section id="properties" class="mt-10">
-        <div class="flex items-center justify-between mb-4">
-                <h2 class="text-xl font-semibold text-gray-700">Mano turtas</h2>
-                <a href="{% url 'add_property' %}" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300 flex items-center space-x-2"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg><span>Pridėti naują</span></a>
-        </div>
-        <div class="border-b border-gray-200">
-            <nav class="-mb-px flex space-x-8" aria-label="Tabs"><button id="tab-rented" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 tab-active" onclick="showTab('rented')">Išnuomota ({{ rented_count }})</button><button id="tab-available" class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300" onclick="showTab('available')">Laisva ({{ available_count }})</button></nav>
-        </div>
-        <div id="content-rented" class="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {% for property in rented_properties %}
-            <div class="bg-white rounded-lg shadow-md overflow-hidden">
-                <img src="{{ property.images.first.image.url|default:'https://placehold.co/400x250/a0aec0/ffffff?text=Nėra+nuotraukos' }}" alt="{{ property.street }}" class="w-full h-48 object-cover">
-                <div class="p-4">
-                    <h3 class="font-bold text-lg text-gray-800">{{ property.street }}, {{ property.city }}</h3>
-                    <p class="text-sm text-gray-500 mb-4">{{ property.get_property_type_display }}</p>
-                    <div class="space-y-3 text-sm">
-                        {% if property.active_lease %}
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Nuomininkas:</span>
-                            <span class="font-semibold text-gray-800">{{ property.active_lease.tenant.get_full_name }}</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Nuomos kaina:</span>
-                            <span class="font-semibold text-green-600">{{ property.active_lease.rent_price|floatformat:"0" }} € / mėn.</span>
-                        </div>
-                        {% endif %}
-                    </div>
-                    <div class="mt-6 flex flex-wrap gap-2">
-                        <a href="{% url 'edit_property' property.id %}" class="flex-grow text-center bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300">Redaguoti</a>
+        {% empty %}
+        <p class="text-gray-500 col-span-full">Šiuo metu išnuomotų objektų nėra.</p>
+        {% endfor %}
+    </div>
+    <div id="content-available" class="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+        style="display: none;">
+        {% for property in available_properties %}
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <img src="{{ property.images.first.image.url|default:'https://placehold.co/400x250/e2e8f0/2d3748?text=Nėra+nuotraukos' }}"
+                alt="{{ property.street }}" class="w-full h-48 object-cover">
+            <div class="p-4">
+                <h3 class="font-bold text-lg text-gray-800">{{ property.street }}, {{ property.city }}</h3>
+                <p class="text-sm text-gray-500 mb-4">{{ property.get_property_type_display }}</p>
+                <div class="space-y-3 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Orientacinė kaina:</span>
+                        <span class="font-semibold text-gray-800">{{ property.rent_price|floatformat:"0" }} € /
+                            mėn.</span>
                     </div>
                 </div>
-            </div>
-            {% empty %}
-            <p class="text-gray-500 col-span-full">Šiuo metu išnuomotų objektų nėra.</p>
-            {% endfor %}
-        </div>
-        <div id="content-available" class="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" style="display: none;">
-            {% for property in available_properties %}
-            <div class="bg-white rounded-lg shadow-md overflow-hidden">
-                <img src="{{ property.images.first.image.url|default:'https://placehold.co/400x250/e2e8f0/2d3748?text=Nėra+nuotraukos' }}" alt="{{ property.street }}" class="w-full h-48 object-cover">
-                <div class="p-4">
-                    <h3 class="font-bold text-lg text-gray-800">{{ property.street }}, {{ property.city }}</h3>
-                    <p class="text-sm text-gray-500 mb-4">{{ property.get_property_type_display }}</p>
-                    <div class="space-y-3 text-sm">
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Orientacinė kaina:</span>
-                            <span class="font-semibold text-gray-800">{{ property.rent_price|floatformat:"0" }} € / mėn.</span>
-                        </div>
-                    </div>
-                    <div class="mt-6 flex space-x-3">
-                        <button data-url="{% url 'assign_tenant' property.id %}" class="assign-tenant-btn w-full text-center bg-green-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-600">Priskirti nuomininką</button>
-                    </div>
+                <div class="mt-6 flex space-x-3">
+                    <button data-url="{% url 'assign_tenant' property.id %}"
+                        class="assign-tenant-btn w-full text-center bg-green-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-600">Priskirti
+                        nuomininką</button>
                 </div>
             </div>
-            {% empty %}
-            <p class="text-gray-500 col-span-full">Šiuo metu laisvų objektų nėra.</p>
-            {% endfor %}
         </div>
-    </section>
+        {% empty %}
+        <p class="text-gray-500 col-span-full">Šiuo metu laisvų objektų nėra.</p>
+        {% endfor %}
+    </div>
+</section>
 {% endblock %}
 
 {% block modals %}
-    <div id="modal-backdrop" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
-        <div id="modal-content" class="w-full max-w-lg bg-white rounded-2xl shadow-xl overflow-hidden transform transition-all sm:w-full sm:max-w-lg">
-            </div>
+<div id="modal-backdrop" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
+    <div id="modal-content"
+        class="w-full max-w-lg bg-white rounded-2xl shadow-xl overflow-hidden transform transition-all sm:w-full sm:max-w-lg">
     </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -116,22 +183,22 @@
         document.getElementById('content-available').style.display = 'none';
         document.getElementById('tab-rented').classList.remove('tab-active');
         document.getElementById('tab-available').classList.remove('tab-active');
-        
+
         document.getElementById('content-' + tabName).style.display = 'grid';
         document.getElementById('tab-' + tabName).classList.add('tab-active');
     }
 
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
         const modalBackdrop = document.getElementById('modal-backdrop');
         const modalContent = document.getElementById('modal-content');
 
-        document.body.addEventListener('click', async function(event) {
+        document.body.addEventListener('click', async function (event) {
             const button = event.target.closest('button');
             if (!button) return;
 
             let url = button.dataset.url;
             if (!url) return;
-            
+
             event.preventDefault();
 
             if (button.matches('.open-request-btn') || button.matches('.assign-tenant-btn') || button.matches('.terminate-lease-btn')) {
@@ -145,7 +212,7 @@
             }
         });
 
-        modalBackdrop.addEventListener('click', function(event) {
+        modalBackdrop.addEventListener('click', function (event) {
             if (event.target === modalBackdrop || event.target.closest('#cancel-popup') || event.target.closest('#cancel-assign') || event.target.closest('#cancel-terminate')) {
                 modalBackdrop.classList.add('hidden');
                 modalContent.innerHTML = '';
