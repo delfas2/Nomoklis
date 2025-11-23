@@ -46,3 +46,5 @@ urllib3==2.5.0
 uvicorn==0.37.0
 zope.interface==8.0
 whitenoise
+django-axes==6.1.1
+django-csp==3.8

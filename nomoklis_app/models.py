@@ -4,7 +4,9 @@ from datetime import date
 from PIL import Image
 from django.core.files.base import ContentFile
 from django.db import models
+from django.contrib.auth.models import User
 from django.conf import settings
+from .validators import validate_image_extension, validate_file_size
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.core.validators import MaxValueValidator, MinValueValidator, ValidationError
@@ -103,7 +105,12 @@ class Profile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     user_type = models.CharField(max_length=12, choices=USER_TYPE_CHOICES, null=True, blank=True, default=None)
     
-    profile_image = models.ImageField(upload_to='profile_pics/', default='profile_pics/default.jpg', verbose_name="Profilio nuotrauka")
+    profile_image = models.ImageField(
+        upload_to='profile_pics/', 
+        default='profile_pics/default.jpg', 
+        verbose_name="Profilio nuotrauka",
+        validators=[validate_image_extension, validate_file_size]
+    )
     about_me = models.TextField(blank=True, null=True, verbose_name="Apie mane")
     city = models.CharField(max_length=100, blank=True, null=True, verbose_name="Miestas")
     is_verified = models.BooleanField(default=False, verbose_name="Patvirtintas")
@@ -145,7 +152,10 @@ class Profile(models.Model):
 
 class PropertyImage(models.Model):
     property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name='images')
-    image = models.ImageField(upload_to='properties/')
+    image = models.ImageField(
+        upload_to='properties/',
+        validators=[validate_image_extension, validate_file_size]
+    )
 
     def __str__(self):
         return f"Image for {self.property.street}"
