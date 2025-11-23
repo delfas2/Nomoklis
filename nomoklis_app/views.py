@@ -1178,6 +1178,13 @@ def notification_list_view(request):
     return render(request, 'nomoklis_app/notifications.html', {'notifications': notifications})
 
 @login_required
+def mark_all_notifications_as_read(request):
+    """Pažymi visus vartotojo pranešimus kaip perskaitytus."""
+    Notification.objects.filter(recipient=request.user, is_read=False).update(is_read=True)
+    messages.success(request, 'Visi pranešimai pažymėti kaip perskaityti.')
+    return redirect('notification_list')
+
+@login_required
 def mark_notification_as_read(request, notification_id):
     notification = get_object_or_404(Notification, id=notification_id, recipient=request.user)
     notification.is_read = True

@@ -46,6 +46,7 @@ urlpatterns = [
     path('problems/<str:encrypted_id>/', views.tenant_problem_detail_view, name='tenant_problem_detail'),
     path('notifications/', views.notification_list_view, name='notification_list'),
     path('notifications/read/<int:notification_id>/', views.mark_notification_as_read, name='mark_notification_as_read'),
+    path('notifications/mark-all-read/', views.mark_all_notifications_as_read, name='mark_all_notifications_as_read'),
     path('notifications/popup/', views.notifications_popup_view, name='notifications_popup'),
     path('toggle_save/<int:property_id>/', views.toggle_save_property, name='toggle_save_property'),
     path('saved_properties/', views.saved_properties_view, name='saved_properties'),
