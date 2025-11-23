@@ -22,8 +22,7 @@ from django.contrib.auth import logout
 from itertools import chain
 from operator import attrgetter
 import json
-from channels.layers import get_channel_layer
-from asgiref.sync import async_to_sync
+
 from django.views.decorators.http import require_POST
 from django.views.decorators.http import require_POST
 from decimal import Decimal
@@ -41,8 +40,7 @@ from .forms import (
     TerminateLeaseForm, PropertyReviewForm, ProblemReportForm, UtilityBillFormSet,
     UserUpdateForm, ProfileEditForm, ConfirmLeaseForm, UserTypeForm
 )
-from django.db.models.signals import post_save
-from django.dispatch import receiver, Signal
+
 from .models import Notification, ProblemUpdate
 from django.contrib.contenttypes.models import ContentType
 from django.http import JsonResponse
@@ -1153,51 +1151,9 @@ def tenant_problem_detail_view(request, problem_id):
 
     return render(request, 'nomoklis_app/tenant_problem_detail.html', context)
 
-@receiver(post_save, sender=ProblemReport)
-def create_problem_notification(sender, instance, created, **kwargs):
-    """Sukuriamas pranešimas ir išsiunčiamas signalas per WebSocket."""
-    if created:
-        recipient = instance.lease.property.owner
-        message = f"Gautas naujas pranešimas apie problemą objekte {instance.lease.property.street}."
-        Notification.objects.create(
-            recipient=recipient,
-            message=message,
-            content_object=instance
-        )
-        channel_layer = get_channel_layer()
-        async_to_sync(channel_layer.group_send)(
-            f"notifications_{recipient.id}",
-            {
-                "type": "send_notification", "message": message
-            }
-        )
 
-# Signalas, kuris sukuria pranešimą, kai paliekamas komentaras
-@receiver(post_save, sender=ProblemUpdate)
-def create_update_notification(sender, instance, created, **kwargs):
-    if created:
-        problem = instance.problem
-        # Jei autorius yra nuomininkas, siunčiame pranešimą nuomotojui
-        if instance.author == problem.lease.tenant:
-            recipient = problem.lease.property.owner
-            message = f"Gautas naujas komentaras problemai objekte {problem.lease.property.street}."
-        # Jei autorius yra nuomotojas, siunčiame pranešimą nuomininkui
-        else:
-            recipient = problem.lease.tenant
-            message = f"Nuomotojas atsakė į jūsų pranešimą apie problemą."
-        
-        Notification.objects.create(
-            recipient=recipient,
-            message=message,
-            content_object=problem
-        )
-        channel_layer = get_channel_layer()
-        async_to_sync(channel_layer.group_send)(
-            f"notifications_{recipient.id}",
-            {
-                "type": "send_notification", "message": message
-            }
-        )
+
+
 
 @login_required
 def notification_list_view(request):
@@ -1238,7 +1194,18 @@ def tenant_request_popup_view(request, request_id):
 
 @login_required
 def notifications_popup_view(request):
-    notifications = Notification.objects.filter(recipient=request.user)[:5] # Paimame tik 5 naujausius
+    notifications = Notification.objects.filter(recipient=request.user).order_by('-created_at')[:5] # Paimame tik 5 naujausius
+    
+    # DEBUG LOGGING
+    try:
+        with open('debug_notifications.log', 'w') as f:
+            f.write(f"User: {request.user.username} (ID: {request.user.id})\n")
+            f.write(f"Notifications Found: {len(notifications)}\n")
+            for n in notifications:
+                f.write(f" - [ID: {n.id}] {n.message} (Read: {n.is_read})\n")
+    except Exception as e:
+        pass
+
     return render(request, 'nomoklis_app/_notifications_popup.html', {'notifications': notifications})
 
 @login_required
@@ -1300,24 +1267,7 @@ def tenant_terminate_lease_view(request, lease_id):
 
     return render(request, 'nomoklis_app/_tenant_terminate_lease_popup.html', {'form': form, 'lease': lease})
 
-@receiver(post_save, sender=RentalRequest)
-def create_rental_request_notification(sender, instance, created, **kwargs):
-    """Sukuriamas pranešimas apie nuomos užklausą ir siunčiamas signalas."""
-    if created:
-        recipient = instance.property.owner
-        message = f"Gauta nauja nuomos užklausa objektui {instance.property.street}."
-        Notification.objects.create(
-            recipient=recipient,
-            message=message,
-            content_object=instance
-        )
-        channel_layer = get_channel_layer()
-        async_to_sync(channel_layer.group_send)(
-            f"notifications_{recipient.id}",
-            {
-                "type": "send_notification", "message": message
-            }
-        )
+
 
 @login_required
 def delete_rental_request_view(request, request_id):
