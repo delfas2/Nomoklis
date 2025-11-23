@@ -633,7 +633,14 @@ def activate_property_payment(request, property_id):
         
         price += fixed_price
 
-    # Užtikriname, kad kaina nebūtų neigiama ir turėtų bent minimalią vertę (pvz. 0.50 EUR), jei Stripe reikalauja
+    # Jei kaina yra 0, aktyvuojame objektą be mokėjimo
+    if price <= Decimal('0.00'):
+        prop.is_paid_listing = True
+        prop.save()
+        messages.success(request, f'Skelbimas "{prop.street} {prop.house_number}" sėkmingai aktyvuotas nemokamai!')
+        return redirect('my_properties')
+
+    # Užtikriname, kad kaina būtų bent minimali Stripe vertė (0.50 EUR)
     if price < Decimal('0.50'):
         price = Decimal('0.50')
 
