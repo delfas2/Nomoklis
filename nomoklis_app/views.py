@@ -2618,6 +2618,13 @@ def admin_support_ticket_detail_view(request, ticket_id):
                     message=message
                 )
                 
+                # Create a notification for the user
+                Notification.objects.create(
+                    recipient=ticket.user,
+                    message="Administratorius atsakė į jūsų pagalbos užklausą.",
+                    content_object=ticket
+                )
+                
                 # Siųsti email vartotojui
                 try:
                     from django.core.mail import send_mail
