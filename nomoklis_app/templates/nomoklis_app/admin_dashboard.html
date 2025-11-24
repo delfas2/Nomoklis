@@ -86,8 +86,8 @@
                         <p class="text-sm font-medium">Nuomotojas <span class="font-bold">{{
                                 event.object.owner.get_full_name|default:event.object.owner.username }}</span> įkėlė
                             naują objektą.</p>
-                        <p class="text-xs text-gray-500">{{ event.object.street }}, {{ event.object.city }} - prieš {{
-                            event.timestamp|timesince }}</p>
+                        <p class="text-xs text-gray-400">{{ event.object.street }}, {{ event.object.city }} - <span
+                                class="text-gray-500">prieš {{ event.timestamp|timesince }}</span></p>
                     </div>
                     {% endif %}
                 </li>

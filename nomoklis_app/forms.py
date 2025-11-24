@@ -139,8 +139,8 @@ class PropertyReviewForm(forms.ModelForm):
         model = PropertyReview
         fields = ['property_rating', 'landlord_rating', 'property_comment', 'landlord_comment']
         widgets = {
-            'property_rating': forms.NumberInput(attrs={'type': 'range', 'min': 1, 'max': 5, 'class': 'w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer'}),
-            'landlord_rating': forms.NumberInput(attrs={'type': 'range', 'min': 1, 'max': 5, 'class': 'w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer'}),
+            'property_rating': forms.NumberInput(attrs={'type': 'range', 'min': 1, 'max': 10, 'class': 'w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer'}),
+            'landlord_rating': forms.NumberInput(attrs={'type': 'range', 'min': 1, 'max': 10, 'class': 'w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer'}),
             'property_comment': forms.Textarea(attrs={'rows': 3, 'class': 'w-full border-gray-300 rounded-md', 'placeholder': 'Jūsų atsiliepimas apie būstą...'}),
             'landlord_comment': forms.Textarea(attrs={'rows': 3, 'class': 'w-full border-gray-300 rounded-md', 'placeholder': 'Jūsų atsiliepimas apie nuomotoją...'}),
         }

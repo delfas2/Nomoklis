@@ -117,16 +117,37 @@ def privacy_policy_view(request):
 
 @login_required
 def nuomotojas_dashboard(request):
+    today = get_current_time(request).date()
     all_properties = Property.objects.filter(owner=request.user)
     
-    # Surandame išnuomotus objektus
-    rented_properties_qs = all_properties.filter(status='isnuomotas')
-
-    for prop in rented_properties_qs:
-        prop.active_lease = prop.leases.filter(status='active').first()
-
-    available_properties = all_properties.filter(status='paruostas')
-    monthly_income = Lease.objects.filter(property__in=rented_properties_qs, status='active').aggregate(total=Sum('rent_price'))['total'] or 0
+    # Surandame visus turtus, kurie turi aktyvią sutartį (įskaitant nutrauktas, bet dar negaliojančias)
+    # Nedirbtume pagal property.status, o pagal tai, ar turi active_lease
+    rented_properties_list = []
+    for prop in all_properties:
+        # Aktyvios sutartys: status='active' ARBA status='terminated' bet end_date dar ateityje
+        active_lease = prop.leases.filter(
+            Q(status='active') | 
+            (Q(status='terminated') & Q(end_date__gte=today))
+        ).first()
+        
+        if active_lease:
+            prop.active_lease = active_lease
+            rented_properties_list.append(prop)
+    
+    # Laisvi objektai - tie, kurie neturi aktyvios sutarties
+    available_properties = []
+    for prop in all_properties:
+        active_lease = prop.leases.filter(
+            Q(status='active') | 
+            (Q(status='terminated') & Q(end_date__gte=today))
+        ).first()
+        
+        if not active_lease and prop.status == 'paruostas':
+            available_properties.append(prop)
+    
+    # Mėnesio pajamos iš aktyvių sutarčių
+    active_lease_ids = [prop.active_lease.id for prop in rented_properties_list if hasattr(prop, 'active_lease')]
+    monthly_income = Lease.objects.filter(id__in=active_lease_ids).aggregate(total=Sum('rent_price'))['total'] or 0
     
     # --- PRIDĖTA DALIS: Gauname laukiančias užklausas ---
     pending_requests = RentalRequest.objects.filter(property__owner=request.user, status='pending').order_by('-created_at')
@@ -144,10 +165,10 @@ def nuomotojas_dashboard(request):
     context = {
         'active_page': 'dashboard',
         'total_properties': all_properties.count(),
-        'rented_count': rented_properties_qs.count(),
-        'available_count': available_properties.count(),
+        'rented_count': len(rented_properties_list),
+        'available_count': len(available_properties),
         'monthly_income': monthly_income,
-        'rented_properties': rented_properties_qs,
+        'rented_properties': rented_properties_list,
         'available_properties': available_properties,
         'pending_requests': pending_requests, # <-- Perduodame užklausas į šabloną
         'pending_leases_for_tenant_approval': pending_leases_for_tenant_approval,
@@ -157,18 +178,27 @@ def nuomotojas_dashboard(request):
 
 @login_required
 def nuomininkas_dashboard(request):
-    active_lease = Lease.objects.filter(tenant=request.user, status='active').first()
+    today = get_current_time(request).date()
+    
+    # Aktyvios sutartys: status='active' ARBA status='terminated' bet end_date dar ateityje
+    active_lease = Lease.objects.filter(
+        tenant=request.user
+    ).filter(
+        Q(status='active') | 
+        (Q(status='terminated') & Q(end_date__gte=today))
+    ).first()
+    
     pending_leases = Lease.objects.filter(tenant=request.user, status='pending')
     
     # Pakeista: gauname ne tik laukiančias, bet ir archyvuotas užklausas
     pending_requests = RentalRequest.objects.filter(tenant=request.user, status='pending').order_by('-created_at')
-    archived_requests = RentalRequest.objects.filter(tenant=request.user).exclude(status='pending').order_by('-created_at')
 
 
-    # Gauname visas pasibaigusias sutartis
+    # Gauname visas pasibaigusias sutartis - tik tas, kurių end_date jau praėjo
     past_leases_qs = Lease.objects.filter(
-        Q(tenant=request.user) &
-        (Q(status='terminated') | Q(end_date__lt=get_current_time(request).date()))
+        tenant=request.user,
+        status='terminated',
+        end_date__lt=today
     ).order_by('-end_date').distinct()
 
     # Gauname ID tų sutarčių, kurioms jau paliktas atsiliepimas
@@ -177,23 +207,35 @@ def nuomininkas_dashboard(request):
     # Atrenkame sutartis, kurioms dar reikia palikti atsiliepimą
     leases_to_review = [lease for lease in past_leases_qs if lease.id not in reviewed_lease_ids]
     
-    # Suskaičiuojame, kiek yra archyvuotų sutarčių (tos, kurios turi atsiliepimą)
-    archived_leases_count = len(reviewed_lease_ids)
+    # Atrenkame archyvuotas sutartis (visos pasibaigusios sutartys)
+    archived_leases = past_leases_qs
+    
+    # Suskaičiuojame, kiek yra archyvuotų sutarčių
+    archived_leases_count = len(archived_leases)
 
     unpaid_invoice = None
     next_payment_date = None
     if active_lease:
         unpaid_invoice = Invoice.objects.filter(lease=active_lease, status='unpaid').order_by('-invoice_date').first()
         if not unpaid_invoice:
-            # ... (sekančios mokėjimo datos skaičiavimo logika lieka ta pati)
-            pass
+            # Jei nėra neapmokėtos sąskaitos, tikriname kada bus kita
+            
+            # Randame paskutinę sugeneruotą sąskaitą (net jei ji apmokėta)
+            last_invoice = Invoice.objects.filter(lease=active_lease).order_by('-invoice_date').first()
+            
+            if last_invoice:
+                # Kita sąskaita bus už mėnesio nuo paskutinės
+                next_payment_date = last_invoice.invoice_date + timedelta(days=30) # Apytiksliai
+            else:
+                # Jei sąskaitų dar nebuvo, kita sąskaita bus mėnuo nuo sutarties pradžios
+                next_payment_date = active_lease.start_date + timedelta(days=30)
 
     context = {
         'active_lease': active_lease,
         'pending_leases': pending_leases,
         'pending_requests': pending_requests,
-        'archived_requests': archived_requests,
         'leases_to_review': leases_to_review,
+        'archived_leases': archived_leases, # Pridedame archyvuotas sutartis
         'archived_leases_count': archived_leases_count,
         'unpaid_invoice': unpaid_invoice,
         'next_payment_date': next_payment_date,
@@ -437,10 +479,14 @@ def landlord_contracts_page(request):
     """
     user = request.user
 
-    # 1. Gauname aktyvias sutartis
+    # 1. Gauname aktyvias sutartis (įskaitant nutrauktas, bet dar galiojančias)
+    today = date.today()
     active_leases = Lease.objects.filter(
-        property__owner=user,
-        status='active'
+        Q(property__owner=user) &
+        (
+            Q(status='active') |
+            (Q(status='terminated') & Q(end_date__gte=today))
+        )
     ).order_by('-start_date')
 
     for lease in active_leases:
@@ -450,7 +496,10 @@ def landlord_contracts_page(request):
     # 2. Gauname archyvuotas sutartis
     archived_leases = Lease.objects.filter(
         Q(property__owner=user) &
-        (Q(status='terminated') | Q(status='expired'))
+        (
+            Q(status='expired') |
+            (Q(status='terminated') & Q(end_date__lt=today))
+        )
     ).order_by('-end_date').distinct()
 
     # 3. Papildomi duomenys
@@ -567,6 +616,21 @@ def edit_property_view(request, property_id):
         form = PropertyForm(request.POST, request.FILES, instance=prop)
         if form.is_valid():
             property_instance = form.save(commit=False)
+            
+            # Jei keičiame statusą į 'paruostas', patikriname ar yra aktyvi sutartis
+            if property_instance.status == 'paruostas':
+                today = get_current_time(request).date()
+                active_lease = prop.leases.filter(
+                    Q(status='active') | 
+                    (Q(status='terminated') & Q(end_date__gte=today))
+                ).first()
+                
+                if active_lease and active_lease.end_date:
+                    # Jei yra aktyvi sutartis, nustatome available_from kaip jos pabaigos datą
+                    property_instance.available_from = active_lease.end_date
+                else:
+                    # Jei nėra aktyvios sutarties, objektas laisvas dabar
+                    property_instance.available_from = None
             
             # Patikriname mokamo skelbimo logiką, jei keičiama būsena
             settings = SystemSettings.objects.first()
@@ -1050,7 +1114,14 @@ def add_property_review_view(request, lease_id):
 # GALUTINIS PATAISYMAS: `report_problem_view` atnaujinta, kad veiktų su paprasta forma
 @login_required
 def report_problem_view(request):
-    active_lease = Lease.objects.filter(tenant=request.user, status='active').first()
+    today = get_current_time(request).date()
+    
+    # Aktyvios sutartys: status='active' ARBA status='terminated' bet end_date dar ateityje
+    active_lease = Lease.objects.filter(tenant=request.user).filter(
+        Q(status='active') | 
+        (Q(status='terminated') & Q(end_date__gte=today))
+    ).first()
+    
     if not active_lease:
         messages.error(request, "Jūs neturite aktyvios nuomos sutarties, todėl negalite registruoti problemos.")
         return redirect('nuomininkas_dashboard')
@@ -1274,14 +1345,13 @@ def tenant_terminate_lease_view(request, lease_id):
             lease.end_date = termination_date
             lease.save()
             
-            # Atlaisviname turtą
-            lease.property.status = 'nuoma_pasibaigusi'
-            lease.property.save()
+            # NEBEATLAISVINAME turto iškart - jis liks "isnuomotas" iki pabaigos datos
+            # Turto statusas bus pakeistas tik tada, kai end_date praeis
             
             # Sukuriame pranešimą nuomotojui
             Notification.objects.create(
                 recipient=lease.property.owner,
-                message=f"Nuomininkas {request.user.get_full_name()} nutraukė sutartį objektui {lease.property.street}. Priežastis: {reason}",
+                message=f"Nuomininkas {request.user.get_full_name()} nutraukė sutartį objektui {lease.property.street}. Nuoma baigsis {termination_date.strftime('%Y-%m-%d')}.",
                 content_object=lease.property
             )
             

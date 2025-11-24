@@ -4,6 +4,29 @@
 
 {% block content %}
 
+{% if active_lease %}
+<!-- Termination Notice -->
+{% if active_lease.status == 'terminated' %}
+<div class="mb-6 bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-lg">
+    <div class="flex items-center">
+        <svg class="h-6 w-6 text-yellow-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+        <div class="flex-1">
+            <p class="text-sm font-medium text-yellow-800">
+                Nuomos sutartis nutraukta
+            </p>
+            <p class="text-sm text-yellow-700 mt-1">
+                Sutartis bus nutraukta <strong>{{ active_lease.end_date|date:"Y-m-d" }}</strong>. Iki tos datos sutartis
+                tebegalioja.
+            </p>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endif %}
+
 {% if pending_requests %}
 <section id="sent-requests" class="mb-10">
     <h2 class="text-xl font-semibold text-gray-700 mb-4">Išsiųstos nuomos užklausos</h2>
@@ -149,62 +172,56 @@
 </section>
 {% endif %}
 
-{% if leases_to_review or archived_leases_count > 0 or archived_requests %}
+{% if leases_to_review or archived_leases_count > 0 %}
 <section id="past-leases" class="mt-10">
     <h2 class="text-xl font-semibold text-gray-700 mb-4">Nuomos istorija</h2>
     <div class="bg-white rounded-lg shadow-md overflow-hidden">
         <ul class="divide-y divide-gray-200">
-            {% for lease in leases_to_review %}
+            {% for lease in archived_leases %}
             <li class="p-4 sm:p-6">
                 <div class="flex items-center justify-between flex-wrap">
                     <div>
-                        <p class="text-sm font-medium text-gray-800 truncate">{{ lease.property.street }}, {{
-                            lease.property.city }}</p>
-                        <p class="mt-1 text-sm text-gray-500">Nuoma baigėsi: {{ lease.end_date|date:"Y-m-d" }}</p>
+                        <p class="text-sm font-medium text-gray-800 truncate">{{ lease.property.street }} {{
+                            lease.property.house_number }}{% if lease.property.flat_number %}-{{
+                            lease.property.flat_number }}{% endif %}, {{ lease.property.city }}</p>
+                        <div class="mt-1 flex items-center space-x-4 text-sm text-gray-500">
+                            <span>Nuoma baigėsi: {{ lease.end_date|date:"Y-m-d" }}</span>
+                            {% if lease.contract_file %}
+                            <a href="{{ lease.contract_file.url }}" target="_blank"
+                                class="text-blue-600 hover:text-blue-800 hover:underline flex items-center">
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                    xmlns="http://www.w3.org/2000/svg">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z">
+                                    </path>
+                                </svg>
+                                Sutartis (PDF)
+                            </a>
+                            {% endif %}
+                        </div>
                     </div>
                     <div class="mt-2 sm:mt-0">
+                        {% if lease in leases_to_review %}
                         <button data-url="{% url 'add_property_review' lease.id %}"
                             class="add-review-btn px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">Palikti
                             atsiliepimą</button>
+                        {% else %}
+                        <span
+                            class="px-3 py-1.5 text-sm font-medium text-green-700 bg-green-100 rounded-md">Atsiliepimas
+                            paliktas</span>
+                        {% endif %}
                     </div>
                 </div>
             </li>
-            {% empty %}
-            {% if not archived_leases_count > 0 %}
-            <li class="p-4 text-center text-sm text-gray-500">Nuomos istorijos kol kas nėra.</li>
-            {% endif %}
             {% endfor %}
 
-            {% for req in archived_requests %}
-            <li class="p-4 sm:p-6 opacity-70">
-                <div class="flex items-center justify-between flex-wrap">
-                    <div>
-                        <p class="text-sm font-medium text-gray-800 truncate">{{ req.property.street }}</p>
-                        <p class="mt-1 text-sm text-gray-500">
-                            Užklausa
-                            {% if req.status == 'accepted' %}
-                            <span class="font-semibold text-green-600">priimta</span>
-                            {% elif req.status == 'rejected' %}
-                            <span class="font-semibold text-red-600">atmesta</span>
-                            {% endif %}
-                        </p>
-                    </div>
-                    <div class="mt-2 sm:mt-0">
-                        <button data-url="{% url 'tenant_request_popup' req.id %}"
-                            class="open-tenant-request-btn px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">Peržiūrėti</button>
-                    </div>
-                </div>
-            </li>
-            {% endfor %}
+
+
+            {% if not archived_leases %}
+            <li class="p-4 text-center text-sm text-gray-500">Nuomos istorijos kol kas nėra.</li>
+            {% endif %}
         </ul>
     </div>
-    {% if archived_leases_count > 0 %}
-    <div class="mt-4 text-center">
-        <a href="{% url 'tenant_lease_archive' %}" class="text-sm font-medium text-blue-600 hover:text-blue-800">
-            Peržiūrėti sutarčių archyvą ({{ archived_leases_count }})
-        </a>
-    </div>
-    {% endif %}
 </section>
 {% endif %}
 {% endblock %}
@@ -236,6 +253,28 @@
                     const response = await fetch(url);
                     modalContent.innerHTML = await response.text();
                     modalBackdrop.classList.remove('hidden');
+
+                    // Initialize slider value displays after modal content loads
+                    setTimeout(function () {
+                        const propertyRatingInput = document.querySelector('input[name="property_rating"]');
+                        const landlordRatingInput = document.querySelector('input[name="landlord_rating"]');
+                        const propertyRatingValue = document.getElementById('property-rating-value');
+                        const landlordRatingValue = document.getElementById('landlord-rating-value');
+
+                        if (propertyRatingInput && propertyRatingValue) {
+                            propertyRatingValue.textContent = propertyRatingInput.value || '5';
+                            propertyRatingInput.addEventListener('input', function () {
+                                propertyRatingValue.textContent = this.value;
+                            });
+                        }
+
+                        if (landlordRatingInput && landlordRatingValue) {
+                            landlordRatingValue.textContent = landlordRatingInput.value || '5';
+                            landlordRatingInput.addEventListener('input', function () {
+                                landlordRatingValue.textContent = this.value;
+                            });
+                        }
+                    }, 50);
                 } catch (error) {
                     console.error("Nepavyko užkrauti formos:", error);
                 }
@@ -243,11 +282,11 @@
         });
 
         modalBackdrop.addEventListener('click', function (event) {
-            if (event.target === modalBackdrop || event.target.closest('#cancel-popup') || event.target.closest('#cancel-terminate') || event.target.closest('#cancel-review')) {
+            if (event.target === modalBackdrop || event.target.closest('#cancel-popup') || event.target.closest('#cancel-terminate') || event.target.closest('#cancel-review') || event.target.closest('.cancel-review-btn')) {
                 modalBackdrop.classList.add('hidden');
                 modalContent.innerHTML = '';
             }
         });
     });
 </script>
-{% endblock %}
+{% endblock %}<!-- test comment -->

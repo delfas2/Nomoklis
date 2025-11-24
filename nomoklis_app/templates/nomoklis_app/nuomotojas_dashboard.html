@@ -107,15 +107,20 @@
                 <p class="text-sm text-gray-500 mb-4">{{ property.get_property_type_display }}</p>
                 <div class="space-y-3 text-sm">
                     {% if property.active_lease %}
+                    {% if property.active_lease.status == 'terminated' %}
+                    <div class="bg-yellow-50 border border-yellow-200 rounded-md p-2 mb-2">
+                        <p class="text-xs font-semibold text-yellow-800">⚠️ Sutartis nutraukta</p>
+                        <p class="text-xs text-yellow-700">Baigsis: {{ property.active_lease.end_date|date:"Y-m-d" }}
+                        </p>
+                    </div>
+                    {% endif %}
                     <div class="flex justify-between">
                         <span class="text-gray-600">Nuomininkas:</span>
-                        <span class="font-semibold text-gray-800">{{ property.active_lease.tenant.get_full_name
-                            }}</span>
+                        <span class="font-semibold text-gray-800">{{ property.active_lease.tenant.get_full_name }}</span>
                     </div>
                     <div class="flex justify-between">
                         <span class="text-gray-600">Nuomos kaina:</span>
-                        <span class="font-semibold text-green-600">{{ property.active_lease.rent_price|floatformat:"0"
-                            }} € / mėn.</span>
+                        <span class="font-semibold text-green-600">{{ property.active_lease.rent_price|floatformat:"0" }} € / mėn.</span>
                     </div>
                     {% endif %}
                 </div>

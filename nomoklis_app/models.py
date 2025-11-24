@@ -62,6 +62,7 @@ class Property(models.Model):
     is_paid_listing = models.BooleanField(default=False, verbose_name="Apmokėtas skelbimas")
     paid_at = models.DateTimeField(null=True, blank=True, verbose_name="Apmokėjimo data")
     activation_price = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True, verbose_name="Sumokėta už aktyvavimą")
+    available_from = models.DateField(null=True, blank=True, verbose_name="Laisvas nuo", help_text="Data, nuo kada objektas bus laisvas nuomai")
 
     def __str__(self):
         address = f"{self.street} {self.house_number}"

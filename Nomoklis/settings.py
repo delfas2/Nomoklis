@@ -10,6 +10,7 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-n@(+@z8l%3hj7_^p2lf%r
 CHAT_ENCRYPTION_KEY = os.environ.get('CHAT_ENCRYPTION_KEY', 'L9mLt5bbNxNS_yaaQv2eiIGdyNInG9vAfI9_sDBfwFA=')
 
 # SECURITY WARNING: don't run with debug turned on in production!
+# SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'False') == 'True' 
 
 # SECURITY: ribojame tik leidžiamus host'us (pašalintas '*')
@@ -37,7 +38,7 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.google',
     # Security apps
     'axes',  # Rate limiting / brute force protection
-    'csp',   # Content Security Policy
+    # 'csp',   # Content Security Policy (Laikinai išjungta)
 ]
 
 MIDDLEWARE = [
@@ -53,7 +54,7 @@ MIDDLEWARE = [
     'allauth.account.middleware.AccountMiddleware',
     # Security middleware
     'axes.middleware.AxesMiddleware',  # Rate limiting (turi būti po AuthenticationMiddleware)
-    'csp.middleware.CSPMiddleware',    # Content Security Policy
+    # 'csp.middleware.CSPMiddleware',    # Content Security Policy (Laikinai išjungta)
 ]
 
 STORAGES = {
@@ -240,11 +241,12 @@ AXES_LOCKOUT_TEMPLATE = None  # Naudoti default error message
 AXES_VERBOSE = True  # Detalūs logai
 
 # --- Content Security Policy (CSP) Nustatymai ---
+# LAIKINAI IŠJUNGTA - sukelia rendering problemas
 # Leidžiame tik saugius šaltinius
-CSP_DEFAULT_SRC = ("'self'",)
-CSP_SCRIPT_SRC = ("'self'", "https://cdn.tailwindcss.com", "https://unpkg.com", "https://cdn.jsdelivr.net", "'unsafe-inline'")
-CSP_STYLE_SRC = ("'self'", "https://fonts.googleapis.com", "https://cdn.tailwindcss.com", "'unsafe-inline'")
-CSP_FONT_SRC = ("'self'", "https://fonts.gstatic.com")
-CSP_IMG_SRC = ("'self'", "data:", "https:", "http:")  # Leidžiame images iš bet kur (CDN ir t.t.)
-CSP_CONNECT_SRC = ("'self'", "wss:", "ws:")  # WebSocket palaikymui
-CSP_FRAME_ANCESTORS = ("'none'",)  # Neleidžiame iframe
+# CSP_DEFAULT_SRC = ("'self'",)
+# CSP_SCRIPT_SRC = ("'self'", "https://cdn.tailwindcss.com", "https://unpkg.com", "https://cdn.jsdelivr.net", "'unsafe-inline'")
+# CSP_STYLE_SRC = ("'self'", "https://fonts.googleapis.com", "https://cdn.tailwindcss.com", "'unsafe-inline'")
+# CSP_FONT_SRC = ("'self'", "https://fonts.gstatic.com")
+# CSP_IMG_SRC = ("'self'", "data:", "https:", "http:")  # Leidžiame images iš bet kur (CDN ir t.t.)
+# CSP_CONNECT_SRC = ("'self'", "wss:", "ws:")  # WebSocket palaikymui
+# CSP_FRAME_ANCESTORS = ("'none'",)  # Neleidžiame iframe
