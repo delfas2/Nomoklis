@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background-color: #2563eb;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 5px 5px 0 0;
+        }
+
+        .content {
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-top: none;
+            border-radius: 0 0 5px 5px;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #2563eb;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+
+        .message-box {
+            background-color: #f3f4f6;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+            font-style: italic;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Gavote naują žinutę</h1>
+        </div>
+        <div class="content">
+            <p>Sveiki, {{ user.first_name }},</p>
+            <p>Vartotojas <strong>{{ sender.get_full_name }}</strong> atsiuntė jums žinutę:</p>
+            <div class="message-box">
+                "{{ message_content|truncatewords:20 }}"
+            </div>
+            <a href="{{ chat_url }}" class="button">Atsakyti</a>
+            <p>Pagarbiai,<br>Nomoklis komanda</p>
+        </div>
+    </div>
+</body>
+
+</html>

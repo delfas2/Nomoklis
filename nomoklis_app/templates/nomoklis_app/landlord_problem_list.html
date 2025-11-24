@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="lt">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,11 +9,21 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        .sidebar-active { background-color: #eff6ff; color: #1d4ed8; font-weight: 600; }
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .sidebar-active {
+            background-color: #eff6ff;
+            color: #1d4ed8;
+            font-weight: 600;
+        }
     </style>
 </head>
+
 <body class="bg-gray-100">
+    {% load encryption_tags %}
+    <!-- FIXED VIA PYTHON SCRIPT -->
     <div class="flex h-screen bg-gray-100">
         {% include 'nomoklis_app/_sidebar.html' %}
         <div class="flex-1 flex flex-col overflow-hidden">
@@ -40,15 +51,12 @@
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ problem.lease.tenant.get_full_name }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ problem.get_problem_type_display }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                            {% if problem.status == 'nauja' %}bg-blue-100 text-blue-800
-                                            {% elif problem.status == 'vykdoma' %}bg-yellow-100 text-yellow-800
-                                            {% else %}bg-green-100 text-green-800{% endif %}">
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {% if problem.status == 'nauja' %}bg-blue-100 text-blue-800{% elif problem.status == 'vykdoma' %}bg-yellow-100 text-yellow-800{% else %}bg-green-100 text-green-800{% endif %}">
                                             {{ problem.get_status_display }}
                                         </span>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <a href="{% url 'landlord_problem_detail' problem.id %}" class="text-blue-600 hover:text-blue-900">Peržiūrėti</a>
+                                        <a href="{% url 'landlord_problem_detail' problem.id|encrypt_id %}" class="text-blue-600 hover:text-blue-900">Peržiūrėti</a>
                                     </td>
                                 </tr>
                                 {% empty %}

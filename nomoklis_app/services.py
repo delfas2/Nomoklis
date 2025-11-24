@@ -109,12 +109,35 @@ def generate_invoice(lease, target_date=None, utility_items=None):
             last_day = calendar.monthrange(today.year, today.month)[1]
             due_date = today.replace(day=last_day)
 
-        total_amount = lease.rent_price
-        rent_amount = lease.rent_price  # For statistics
-        invoice_items.append({
-            'name': f"Nuoma už {LITHUANIAN_MONTHS[invoice_date_context.month]} mėn.",
-            'price': f"{lease.rent_price:.2f}"
-        })
+        # Check if this is a final invoice for a terminated lease
+        is_final_invoice = (
+            lease.status == 'terminated' and 
+            lease.end_date and
+            lease.end_date.year == today.year and 
+            lease.end_date.month == today.month and
+            lease.end_date.day != calendar.monthrange(today.year, today.month)[1]  # Not last day of month
+        )
+        
+        if is_final_invoice:
+            # Calculate prorated rent for the final partial month
+            days_in_month = calendar.monthrange(invoice_date_context.year, invoice_date_context.month)[1]
+            days_occupied = lease.end_date.day  # Days from 1st to end_date (inclusive)
+            proportional_rent = (lease.rent_price / days_in_month) * days_occupied
+            total_amount = proportional_rent
+            rent_amount = proportional_rent  # For statistics
+            invoice_items.append({
+                'name': f"Nuoma už {LITHUANIAN_MONTHS[invoice_date_context.month]} mėn. ({days_occupied} d.)",
+                'price': f"{proportional_rent:.2f}"
+            })
+        else:
+            # Standard full month rent
+            total_amount = lease.rent_price
+            rent_amount = lease.rent_price  # For statistics
+            invoice_items.append({
+                'name': f"Nuoma už {LITHUANIAN_MONTHS[invoice_date_context.month]} mėn.",
+                'price': f"{lease.rent_price:.2f}"
+            })
+
         
         # Calculate repair costs
         # We fetch ALL resolved, tenant-paid repairs that are NOT yet billed (invoice is Null)

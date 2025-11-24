@@ -22,8 +22,7 @@ from django.contrib.auth import logout
 from itertools import chain
 from operator import attrgetter
 import json
-from channels.layers import get_channel_layer
-from asgiref.sync import async_to_sync
+
 from django.views.decorators.http import require_POST
 from django.views.decorators.http import require_POST
 from decimal import Decimal
@@ -41,8 +40,7 @@ from .forms import (
     TerminateLeaseForm, PropertyReviewForm, ProblemReportForm, UtilityBillFormSet,
     UserUpdateForm, ProfileEditForm, ConfirmLeaseForm, UserTypeForm
 )
-from django.db.models.signals import post_save
-from django.dispatch import receiver, Signal
+
 from .models import Notification, ProblemUpdate
 from django.contrib.contenttypes.models import ContentType
 from django.http import JsonResponse
@@ -119,16 +117,37 @@ def privacy_policy_view(request):
 
 @login_required
 def nuomotojas_dashboard(request):
+    today = get_current_time(request).date()
     all_properties = Property.objects.filter(owner=request.user)
     
-    # Surandame išnuomotus objektus
-    rented_properties_qs = all_properties.filter(status='isnuomotas')
-
-    for prop in rented_properties_qs:
-        prop.active_lease = prop.leases.filter(status='active').first()
-
-    available_properties = all_properties.filter(status='paruostas')
-    monthly_income = Lease.objects.filter(property__in=rented_properties_qs, status='active').aggregate(total=Sum('rent_price'))['total'] or 0
+    # Surandame visus turtus, kurie turi aktyvią sutartį (įskaitant nutrauktas, bet dar negaliojančias)
+    # Nedirbtume pagal property.status, o pagal tai, ar turi active_lease
+    rented_properties_list = []
+    for prop in all_properties:
+        # Aktyvios sutartys: status='active' ARBA status='terminated' bet end_date dar ateityje
+        active_lease = prop.leases.filter(
+            Q(status='active') | 
+            (Q(status='terminated') & Q(end_date__gte=today))
+        ).first()
+        
+        if active_lease:
+            prop.active_lease = active_lease
+            rented_properties_list.append(prop)
+    
+    # Laisvi objektai - tie, kurie neturi aktyvios sutarties
+    available_properties = []
+    for prop in all_properties:
+        active_lease = prop.leases.filter(
+            Q(status='active') | 
+            (Q(status='terminated') & Q(end_date__gte=today))
+        ).first()
+        
+        if not active_lease and prop.status == 'paruostas':
+            available_properties.append(prop)
+    
+    # Mėnesio pajamos iš aktyvių sutarčių
+    active_lease_ids = [prop.active_lease.id for prop in rented_properties_list if hasattr(prop, 'active_lease')]
+    monthly_income = Lease.objects.filter(id__in=active_lease_ids).aggregate(total=Sum('rent_price'))['total'] or 0
     
     # --- PRIDĖTA DALIS: Gauname laukiančias užklausas ---
     pending_requests = RentalRequest.objects.filter(property__owner=request.user, status='pending').order_by('-created_at')
@@ -146,10 +165,10 @@ def nuomotojas_dashboard(request):
     context = {
         'active_page': 'dashboard',
         'total_properties': all_properties.count(),
-        'rented_count': rented_properties_qs.count(),
-        'available_count': available_properties.count(),
+        'rented_count': len(rented_properties_list),
+        'available_count': len(available_properties),
         'monthly_income': monthly_income,
-        'rented_properties': rented_properties_qs,
+        'rented_properties': rented_properties_list,
         'available_properties': available_properties,
         'pending_requests': pending_requests, # <-- Perduodame užklausas į šabloną
         'pending_leases_for_tenant_approval': pending_leases_for_tenant_approval,
@@ -159,18 +178,27 @@ def nuomotojas_dashboard(request):
 
 @login_required
 def nuomininkas_dashboard(request):
-    active_lease = Lease.objects.filter(tenant=request.user, status='active').first()
+    today = get_current_time(request).date()
+    
+    # Aktyvios sutartys: status='active' ARBA status='terminated' bet end_date dar ateityje
+    active_lease = Lease.objects.filter(
+        tenant=request.user
+    ).filter(
+        Q(status='active') | 
+        (Q(status='terminated') & Q(end_date__gte=today))
+    ).first()
+    
     pending_leases = Lease.objects.filter(tenant=request.user, status='pending')
     
     # Pakeista: gauname ne tik laukiančias, bet ir archyvuotas užklausas
     pending_requests = RentalRequest.objects.filter(tenant=request.user, status='pending').order_by('-created_at')
-    archived_requests = RentalRequest.objects.filter(tenant=request.user).exclude(status='pending').order_by('-created_at')
 
 
-    # Gauname visas pasibaigusias sutartis
+    # Gauname visas pasibaigusias sutartis - tik tas, kurių end_date jau praėjo
     past_leases_qs = Lease.objects.filter(
-        Q(tenant=request.user) &
-        (Q(status='terminated') | Q(end_date__lt=get_current_time(request).date()))
+        tenant=request.user,
+        status='terminated',
+        end_date__lt=today
     ).order_by('-end_date').distinct()
 
     # Gauname ID tų sutarčių, kurioms jau paliktas atsiliepimas
@@ -179,23 +207,35 @@ def nuomininkas_dashboard(request):
     # Atrenkame sutartis, kurioms dar reikia palikti atsiliepimą
     leases_to_review = [lease for lease in past_leases_qs if lease.id not in reviewed_lease_ids]
     
-    # Suskaičiuojame, kiek yra archyvuotų sutarčių (tos, kurios turi atsiliepimą)
-    archived_leases_count = len(reviewed_lease_ids)
+    # Atrenkame archyvuotas sutartis (visos pasibaigusios sutartys)
+    archived_leases = past_leases_qs
+    
+    # Suskaičiuojame, kiek yra archyvuotų sutarčių
+    archived_leases_count = len(archived_leases)
 
     unpaid_invoice = None
     next_payment_date = None
     if active_lease:
         unpaid_invoice = Invoice.objects.filter(lease=active_lease, status='unpaid').order_by('-invoice_date').first()
         if not unpaid_invoice:
-            # ... (sekančios mokėjimo datos skaičiavimo logika lieka ta pati)
-            pass
+            # Jei nėra neapmokėtos sąskaitos, tikriname kada bus kita
+            
+            # Randame paskutinę sugeneruotą sąskaitą (net jei ji apmokėta)
+            last_invoice = Invoice.objects.filter(lease=active_lease).order_by('-invoice_date').first()
+            
+            if last_invoice:
+                # Kita sąskaita bus už mėnesio nuo paskutinės
+                next_payment_date = last_invoice.invoice_date + timedelta(days=30) # Apytiksliai
+            else:
+                # Jei sąskaitų dar nebuvo, kita sąskaita bus mėnuo nuo sutarties pradžios
+                next_payment_date = active_lease.start_date + timedelta(days=30)
 
     context = {
         'active_lease': active_lease,
         'pending_leases': pending_leases,
         'pending_requests': pending_requests,
-        'archived_requests': archived_requests,
         'leases_to_review': leases_to_review,
+        'archived_leases': archived_leases, # Pridedame archyvuotas sutartis
         'archived_leases_count': archived_leases_count,
         'unpaid_invoice': unpaid_invoice,
         'next_payment_date': next_payment_date,
@@ -404,6 +444,52 @@ def stats_view(request):
     ).filter(problem_count__gt=0).order_by('-problem_count')
 
     # ==================================================================
+    # USER GROWTH DATA (Cumulative)
+    # ==================================================================
+    from django.contrib.auth.models import User
+    from .models import UserProfile
+    from collections import defaultdict
+    from datetime import datetime
+    
+    # Get all users with their profiles
+    users_with_profiles = User.objects.select_related('profile').all().order_by('date_joined')
+    
+    # Dictionary to store cumulative counts by month
+    monthly_data = defaultdict(lambda: {'landlords': 0, 'tenants': 0})
+    cumulative_landlords = 0
+    cumulative_tenants = 0
+    
+    for user in users_with_profiles:
+        # Get the month key (YYYY-MM format)
+        month_key = user.date_joined.strftime('%Y-%m')
+        
+        # Increment cumulative counts
+        if hasattr(user, 'profile') and user.profile.user_type == 'nuomotojas':
+            cumulative_landlords += 1
+        elif hasattr(user, 'profile') and user.profile.user_type == 'nuomininkas':
+            cumulative_tenants += 1
+        
+        # Store cumulative counts for this month
+        monthly_data[month_key] = {
+            'landlords': cumulative_landlords,
+            'tenants': cumulative_tenants
+        }
+    
+    # Convert to sorted lists for chart display
+    sorted_months = sorted(monthly_data.keys())
+    user_growth_labels = []
+    landlord_cumulative_data = []
+    tenant_cumulative_data = []
+    
+    for month in sorted_months:
+        # Convert YYYY-MM to Lithuanian month name and year
+        year, month_num = month.split('-')
+        month_label = f"{LITHUANIAN_MONTHS[int(month_num)]} {year}"
+        user_growth_labels.append(month_label)
+        landlord_cumulative_data.append(monthly_data[month]['landlords'])
+        tenant_cumulative_data.append(monthly_data[month]['tenants'])
+
+    # ==================================================================
     # CONTEXT
     # ==================================================================
     context = {
@@ -419,6 +505,10 @@ def stats_view(request):
         'total_properties_count': total_properties_count, 'total_expenses': total_expenses_for_chart,
         'income_labels': json.dumps(income_labels), 'income_data': json.dumps(income_data),
         'expenses_labels': json.dumps(expenses_labels), 'expenses_data': json.dumps(expenses_data),
+        # User growth data
+        'user_growth_labels': json.dumps(user_growth_labels),
+        'landlord_cumulative_data': json.dumps(landlord_cumulative_data),
+        'tenant_cumulative_data': json.dumps(tenant_cumulative_data),
         # Tab 2
         'profitability_labels': profitability_labels, 'profitability_profit_data': profitability_profit_data,
         'profitability_expenses_data': profitability_expenses_data,
@@ -429,7 +519,8 @@ def stats_view(request):
     }
     return render(request, 'nomoklis_app/stats.html', context)
 
-from .utils import encode_room_name, decode_room_name
+from .utils import encode_room_name, decode_room_name, encrypt_id, decrypt_id
+from .models import Notification
 
 @login_required
 def landlord_contracts_page(request):
@@ -439,10 +530,14 @@ def landlord_contracts_page(request):
     """
     user = request.user
 
-    # 1. Gauname aktyvias sutartis
+    # 1. Gauname aktyvias sutartis (įskaitant nutrauktas, bet dar galiojančias)
+    today = date.today()
     active_leases = Lease.objects.filter(
-        property__owner=user,
-        status='active'
+        Q(property__owner=user) &
+        (
+            Q(status='active') |
+            (Q(status='terminated') & Q(end_date__gte=today))
+        )
     ).order_by('-start_date')
 
     for lease in active_leases:
@@ -452,7 +547,10 @@ def landlord_contracts_page(request):
     # 2. Gauname archyvuotas sutartis
     archived_leases = Lease.objects.filter(
         Q(property__owner=user) &
-        (Q(status='terminated') | Q(status='expired'))
+        (
+            Q(status='expired') |
+            (Q(status='terminated') & Q(end_date__lt=today))
+        )
     ).order_by('-end_date').distinct()
 
     # 3. Papildomi duomenys
@@ -570,6 +668,21 @@ def edit_property_view(request, property_id):
         if form.is_valid():
             property_instance = form.save(commit=False)
             
+            # Jei keičiame statusą į 'paruostas', patikriname ar yra aktyvi sutartis
+            if property_instance.status == 'paruostas':
+                today = get_current_time(request).date()
+                active_lease = prop.leases.filter(
+                    Q(status='active') | 
+                    (Q(status='terminated') & Q(end_date__gte=today))
+                ).first()
+                
+                if active_lease and active_lease.end_date:
+                    # Jei yra aktyvi sutartis, nustatome available_from kaip jos pabaigos datą
+                    property_instance.available_from = active_lease.end_date
+                else:
+                    # Jei nėra aktyvios sutarties, objektas laisvas dabar
+                    property_instance.available_from = None
+            
             # Patikriname mokamo skelbimo logiką, jei keičiama būsena
             settings = SystemSettings.objects.first()
             requires_payment = (
@@ -635,7 +748,14 @@ def activate_property_payment(request, property_id):
         
         price += fixed_price
 
-    # Užtikriname, kad kaina nebūtų neigiama ir turėtų bent minimalią vertę (pvz. 0.50 EUR), jei Stripe reikalauja
+    # Jei kaina yra 0, aktyvuojame objektą be mokėjimo
+    if price <= Decimal('0.00'):
+        prop.is_paid_listing = True
+        prop.save()
+        messages.success(request, f'Skelbimas "{prop.street} {prop.house_number}" sėkmingai aktyvuotas nemokamai!')
+        return redirect('my_properties')
+
+    # Užtikriname, kad kaina būtų bent minimali Stripe vertė (0.50 EUR)
     if price < Decimal('0.50'):
         price = Decimal('0.50')
 
@@ -1045,7 +1165,14 @@ def add_property_review_view(request, lease_id):
 # GALUTINIS PATAISYMAS: `report_problem_view` atnaujinta, kad veiktų su paprasta forma
 @login_required
 def report_problem_view(request):
-    active_lease = Lease.objects.filter(tenant=request.user, status='active').first()
+    today = get_current_time(request).date()
+    
+    # Aktyvios sutartys: status='active' ARBA status='terminated' bet end_date dar ateityje
+    active_lease = Lease.objects.filter(tenant=request.user).filter(
+        Q(status='active') | 
+        (Q(status='terminated') & Q(end_date__gte=today))
+    ).first()
+    
     if not active_lease:
         messages.error(request, "Jūs neturite aktyvios nuomos sutarties, todėl negalite registruoti problemos.")
         return redirect('nuomininkas_dashboard')
@@ -1092,7 +1219,12 @@ def landlord_problem_list_view(request):
     return render(request, 'nomoklis_app/landlord_problem_list.html', context)
 
 @login_required
-def landlord_problem_detail_view(request, problem_id):
+def landlord_problem_detail_view(request, encrypted_id):
+    problem_id = decrypt_id(encrypted_id)
+    if not problem_id:
+        messages.error(request, "Neteisinga nuoroda.")
+        return redirect('landlord_problem_list')
+
     problem = get_object_or_404(ProblemReport, id=problem_id, lease__property__owner=request.user)
     updates = problem.updates.all()
 
@@ -1112,7 +1244,7 @@ def landlord_problem_detail_view(request, problem_id):
                 )
 
             messages.success(request, "Problemos informacija atnaujinta.")
-            return redirect('landlord_problem_detail', problem_id=problem.id)
+            return redirect('landlord_problem_detail', encrypted_id=encrypted_id)
     else: # GET metodas
         # Formą užpildome esamomis problemos reikšmėmis
         form = LandlordProblemUpdateForm(instance=problem)
@@ -1127,7 +1259,12 @@ def landlord_problem_detail_view(request, problem_id):
     return render(request, 'nomoklis_app/landlord_problem_detail.html', context)
 
 @login_required
-def tenant_problem_detail_view(request, problem_id):
+def tenant_problem_detail_view(request, encrypted_id):
+    problem_id = decrypt_id(encrypted_id)
+    if not problem_id:
+        messages.error(request, "Neteisinga nuoroda.")
+        return redirect('problem_list')
+
     problem = get_object_or_404(ProblemReport, id=problem_id, lease__tenant=request.user)
     updates = problem.updates.all()
 
@@ -1138,8 +1275,14 @@ def tenant_problem_detail_view(request, problem_id):
             new_update.problem = problem
             new_update.author = request.user
             new_update.save()
+            # Create a notification for the problem owner (landlord)
+            Notification.objects.create(
+                recipient=problem.lease.property.owner,
+                message=f"Nuomininkas {request.user.get_full_name()} pakomentavo problemą: {problem.title}",
+                content_object=problem
+            )
             messages.success(request, "Jūsų komentaras pridėtas.")
-            return redirect('tenant_problem_detail', problem_id=problem.id)
+            return redirect('tenant_problem_detail', encrypted_id=encrypted_id)
     else: # GET metodas
         form = TenantCommentForm()
 
@@ -1153,56 +1296,21 @@ def tenant_problem_detail_view(request, problem_id):
 
     return render(request, 'nomoklis_app/tenant_problem_detail.html', context)
 
-@receiver(post_save, sender=ProblemReport)
-def create_problem_notification(sender, instance, created, **kwargs):
-    """Sukuriamas pranešimas ir išsiunčiamas signalas per WebSocket."""
-    if created:
-        recipient = instance.lease.property.owner
-        message = f"Gautas naujas pranešimas apie problemą objekte {instance.lease.property.street}."
-        Notification.objects.create(
-            recipient=recipient,
-            message=message,
-            content_object=instance
-        )
-        channel_layer = get_channel_layer()
-        async_to_sync(channel_layer.group_send)(
-            f"notifications_{recipient.id}",
-            {
-                "type": "send_notification", "message": message
-            }
-        )
 
-# Signalas, kuris sukuria pranešimą, kai paliekamas komentaras
-@receiver(post_save, sender=ProblemUpdate)
-def create_update_notification(sender, instance, created, **kwargs):
-    if created:
-        problem = instance.problem
-        # Jei autorius yra nuomininkas, siunčiame pranešimą nuomotojui
-        if instance.author == problem.lease.tenant:
-            recipient = problem.lease.property.owner
-            message = f"Gautas naujas komentaras problemai objekte {problem.lease.property.street}."
-        # Jei autorius yra nuomotojas, siunčiame pranešimą nuomininkui
-        else:
-            recipient = problem.lease.tenant
-            message = f"Nuomotojas atsakė į jūsų pranešimą apie problemą."
-        
-        Notification.objects.create(
-            recipient=recipient,
-            message=message,
-            content_object=problem
-        )
-        channel_layer = get_channel_layer()
-        async_to_sync(channel_layer.group_send)(
-            f"notifications_{recipient.id}",
-            {
-                "type": "send_notification", "message": message
-            }
-        )
+
+
 
 @login_required
 def notification_list_view(request):
     notifications = Notification.objects.filter(recipient=request.user)
     return render(request, 'nomoklis_app/notifications.html', {'notifications': notifications})
+
+@login_required
+def mark_all_notifications_as_read(request):
+    """Pažymi visus vartotojo pranešimus kaip perskaitytus."""
+    Notification.objects.filter(recipient=request.user, is_read=False).update(is_read=True)
+    messages.success(request, 'Visi pranešimai pažymėti kaip perskaityti.')
+    return redirect('notification_list')
 
 @login_required
 def mark_notification_as_read(request, notification_id):
@@ -1212,10 +1320,11 @@ def mark_notification_as_read(request, notification_id):
     
     # Nustatome, kur nukreipti vartotoją
     if isinstance(notification.content_object, ProblemReport):
+        encrypted_id = encrypt_id(notification.object_id)
         if request.user.profile.user_type == 'nuomotojas':
-            return redirect('landlord_problem_detail', problem_id=notification.object_id)
+            return redirect('landlord_problem_detail', encrypted_id=encrypted_id)
         else:
-            return redirect('tenant_problem_detail', problem_id=notification.object_id)
+            return redirect('tenant_problem_detail', encrypted_id=encrypted_id)
             
     # --- PAKEISTA DALIS ---
     elif isinstance(notification.content_object, RentalRequest):
@@ -1238,7 +1347,18 @@ def tenant_request_popup_view(request, request_id):
 
 @login_required
 def notifications_popup_view(request):
-    notifications = Notification.objects.filter(recipient=request.user)[:5] # Paimame tik 5 naujausius
+    notifications = Notification.objects.filter(recipient=request.user).order_by('-created_at')[:5] # Paimame tik 5 naujausius
+    
+    # DEBUG LOGGING
+    try:
+        with open('debug_notifications.log', 'w') as f:
+            f.write(f"User: {request.user.username} (ID: {request.user.id})\n")
+            f.write(f"Notifications Found: {len(notifications)}\n")
+            for n in notifications:
+                f.write(f" - [ID: {n.id}] {n.message} (Read: {n.is_read})\n")
+    except Exception as e:
+        pass
+
     return render(request, 'nomoklis_app/_notifications_popup.html', {'notifications': notifications})
 
 @login_required
@@ -1282,14 +1402,13 @@ def tenant_terminate_lease_view(request, lease_id):
             lease.end_date = termination_date
             lease.save()
             
-            # Atlaisviname turtą
-            lease.property.status = 'nuoma_pasibaigusi'
-            lease.property.save()
+            # NEBEATLAISVINAME turto iškart - jis liks "isnuomotas" iki pabaigos datos
+            # Turto statusas bus pakeistas tik tada, kai end_date praeis
             
             # Sukuriame pranešimą nuomotojui
             Notification.objects.create(
                 recipient=lease.property.owner,
-                message=f"Nuomininkas {request.user.get_full_name()} nutraukė sutartį objektui {lease.property.street}. Priežastis: {reason}",
+                message=f"Nuomininkas {request.user.get_full_name()} nutraukė sutartį objektui {lease.property.street}. Nuoma baigsis {termination_date.strftime('%Y-%m-%d')}.",
                 content_object=lease.property
             )
             
@@ -1300,24 +1419,7 @@ def tenant_terminate_lease_view(request, lease_id):
 
     return render(request, 'nomoklis_app/_tenant_terminate_lease_popup.html', {'form': form, 'lease': lease})
 
-@receiver(post_save, sender=RentalRequest)
-def create_rental_request_notification(sender, instance, created, **kwargs):
-    """Sukuriamas pranešimas apie nuomos užklausą ir siunčiamas signalas."""
-    if created:
-        recipient = instance.property.owner
-        message = f"Gauta nauja nuomos užklausa objektui {instance.property.street}."
-        Notification.objects.create(
-            recipient=recipient,
-            message=message,
-            content_object=instance
-        )
-        channel_layer = get_channel_layer()
-        async_to_sync(channel_layer.group_send)(
-            f"notifications_{recipient.id}",
-            {
-                "type": "send_notification", "message": message
-            }
-        )
+
 
 @login_required
 def delete_rental_request_view(request, request_id):
@@ -1878,11 +1980,11 @@ def admin_dashboard(request):
     Prieinamas tik prisijungusiems supervartotojams.
     """
     # --- Duomenys statistikoms ir grafikams ---
-    six_months_ago = get_current_time(request) - timedelta(days=180)
+    twelve_months_ago = get_current_time(request) - timedelta(days=365)
     
     # Nuomotojų augimas
     landlord_growth_data = User.objects.filter(
-        date_joined__gte=six_months_ago,
+        date_joined__gte=twelve_months_ago,
         profile__user_type='nuomotojas'
     ).annotate(month=TruncMonth('date_joined')) \
     .values('month') \
@@ -1891,7 +1993,7 @@ def admin_dashboard(request):
 
     # Nuomininkų augimas
     tenant_growth_data = User.objects.filter(
-        date_joined__gte=six_months_ago,
+        date_joined__gte=twelve_months_ago,
         profile__user_type='nuomininkas'
     ).annotate(month=TruncMonth('date_joined')) \
     .values('month') \
@@ -1900,23 +2002,52 @@ def admin_dashboard(request):
     
     months_labels = []
     current_date = get_current_time(request).replace(day=1)
-    for i in range(5, -1, -1):
+    for i in range(11, -1, -1):
         month_date = current_date - timedelta(days=i*30)
         months_labels.append(month_date.strftime("%B"))
     
-    landlord_chart_data = [0] * 6
+    landlord_chart_data = [0] * 12
     for entry in landlord_growth_data:
         month_name = entry['month'].strftime("%B")
         if month_name in months_labels:
             index = months_labels.index(month_name)
             landlord_chart_data[index] = entry['count']
     
-    tenant_chart_data = [0] * 6
+    tenant_chart_data = [0] * 12
     for entry in tenant_growth_data:
         month_name = entry['month'].strftime("%B")
         if month_name in months_labels:
             index = months_labels.index(month_name)
             tenant_chart_data[index] = entry['count']
+
+    # --- KUMULIACINIAI DUOMENYS ---
+    # Skaičiuojame kumuliacinius augimo duomenis (iš viso vartotojų nuo pradžios iki kiekvieno mėnesio pabaigos)
+    landlord_cumulative_data = [0] * 12
+    tenant_cumulative_data = [0] * 12
+    
+    for i in range(12):
+        # Nustatome mėnesio pradžią ir pabaigą
+        month_offset = 11 - i
+        month_date = current_date - timedelta(days=month_offset*30)
+        month_start = month_date.replace(day=1)
+        
+        # Nustatome mėnesio pabaigą
+        if month_date.month == 12:
+            month_end = month_date.replace(year=month_date.year + 1, month=1, day=1) - timedelta(days=1)
+        else:
+            month_end = month_date.replace(month=month_date.month + 1, day=1) - timedelta(days=1)
+        
+        # Skaičiuojame visus nuomotojus, užsiregistravusius iki šio mėnesio pabaigos
+        landlord_cumulative_data[i] = User.objects.filter(
+            date_joined__lte=month_end,
+            profile__user_type='nuomotojas'
+        ).count()
+        
+        # Skaičiuojame visus nuomininkus, užsiregistravusius iki šio mėnesio pabaigos
+        tenant_cumulative_data[i] = User.objects.filter(
+            date_joined__lte=month_end,
+            profile__user_type='nuomininkas'
+        ).count()
 
     # --- NAUJA DALIS: Duomenys "Naujausiems įvykiams" ---
     recent_users = User.objects.order_by('-date_joined')[:5]
@@ -1945,11 +2076,16 @@ def admin_dashboard(request):
         'active_leases': Lease.objects.filter(status='active').count(),
         'monthly_income': total_monthly_income,
         'active_page': 'dashboard',
-        # Duomenys grafikams
+        # Duomenys grafikams (mėnesio augimas)
         'landlord_growth_labels': json.dumps(months_labels),
         'landlord_growth_data': json.dumps(landlord_chart_data),
         'tenant_growth_labels': json.dumps(months_labels),
         'tenant_growth_data': json.dumps(tenant_chart_data),
+        # Duomenys kumuliaciniams grafikams
+        'landlord_cumulative_labels': json.dumps(months_labels),
+        'landlord_cumulative_data': json.dumps(landlord_cumulative_data),
+        'tenant_cumulative_labels': json.dumps(months_labels),
+        'tenant_cumulative_data': json.dumps(tenant_cumulative_data),
         
         # Duomenys įvykių blokams
         'recent_events': sorted_events[:5], # Paimame 5 naujausius įvykius
@@ -2428,6 +2564,12 @@ def support_ticket_detail_view(request, ticket_id):
             update.ticket = ticket
             update.user = request.user
             update.save()
+            # Create a notification for the admin
+            Notification.objects.create(
+                recipient=User.objects.filter(is_superuser=True).first(), # Assuming one admin for notifications
+                message=f"Vartotojas {request.user.get_full_name()} atsakė į užklausą: {ticket.subject}",
+                content_object=ticket
+            )
             messages.success(request, 'Jūsų atsakymas išsiųstas.')
             return redirect('support_ticket_detail', ticket_id=ticket.id)
     else:
@@ -2460,39 +2602,84 @@ def admin_support_ticket_list_view(request):
 @user_passes_test(lambda u: u.is_superuser, login_url='/accounts/login/')
 def admin_support_ticket_detail_view(request, ticket_id):
     ticket = get_object_or_404(SupportTicket, id=ticket_id)
-    updates = ticket.updates.all()
+    
     if request.method == 'POST':
-        form = AdminSupportTicketMessageForm(request.POST)
-        if form.is_valid():
-            update = form.save(commit=False)
-            update.ticket = ticket
-            update.user = request.user # Admin user
-            update.save()
-            
+        message_form = AdminSupportTicketMessageForm(request.POST)
+        status_form = AdminSupportTicketUpdateForm(request.POST, instance=ticket)
+        
+        # Handle message reply
+        if message_form.is_valid():
+            message = message_form.cleaned_data.get('message')
+            if message:  # Tik jei įvestas atsakymas
+                # Sukuriamas atsakymas
+                SupportTicketUpdate.objects.create(
+                    ticket=ticket,
+                    user=request.user,
+                    message=message
+                )
+                
+                # Siųsti email vartotojui
+                try:
+                    from django.core.mail import send_mail
+                    from django.conf import settings
+                    
+                    subject = f'Atsakymas į jūsų užklausą: {ticket.subject}'
+                    message_text = f"""
+Sveiki {ticket.user.get_full_name()},
+
+Administratorius atsakė į jūsų pagalbos užklausą.
+
+Užklausa: {ticket.subject}
+Atsakymas: {message}
+
+Galite peržiūrėti visą pokalbį prisijungę prie sistemos.
+
+---
+Nomoklis Komanda
+                    """
+                    
+                    send_mail(
+                        subject,
+                        message_text,
+                        settings.DEFAULT_FROM_EMAIL,
+                        [ticket.user.email],
+                        fail_silently=True,
+                    )
+                except Exception as e:
+                    print(f"Klaida siunčiant email: {e}")
+        
+        # Handle status update
+        if status_form.is_valid():
             # Pakeičiame statusą, jei adminas pasirinko
-            new_status = request.POST.get('status')
+            new_status = status_form.cleaned_data.get('status')
             if new_status and new_status != ticket.status:
                 ticket.status = new_status
                 ticket.save()
                 # Pranešimas vartotojui apie statuso pasikeitimą
                 SupportTicketUpdate.objects.create(
-                    ticket=ticket, 
-                    user=request.user, 
-                    comment=f"Būsena pakeista į '{ticket.get_status_display()}'",
-                    is_internal=True # Vartotojas nemato šio įrašo
+                    ticket=ticket,
+                    user=request.user,
+                    message=f"Būsena pakeista į '{ticket.get_status_display()}'",
+                    is_internal=True
                 )
-
-            messages.success(request, 'Atsakymas išsiųstas vartotojui.')
-            return redirect('admin_support_ticket_detail', ticket_id=ticket.id)
-    else: # GET metodas
-        form = AdminSupportTicketMessageForm()
-
-    status_form = AdminSupportTicketUpdateForm(instance=ticket)
+                # Notification for status change
+                Notification.objects.create(
+                    recipient=ticket.user,
+                    message=f"Jūsų užklausos būsena pakeista į {ticket.get_status_display()}",
+                    content_object=ticket
+                )
+            else:
+                status_form.save() # Save other fields if status didn't change
+        
+        messages.success(request, 'Atsakymas išsiųstas vartotojui.')
+        return redirect('admin_support_ticket_detail', ticket_id=ticket.id)
+    else:  # GET metodas
+        message_form = AdminSupportTicketMessageForm()
+        status_form = AdminSupportTicketUpdateForm(instance=ticket)
 
     context = {
         'ticket': ticket,
-        'updates': updates,
-        'form': form,
+        'message_form': message_form,
         'status_form': status_form,
         'active_page': 'support_tickets',
     }
