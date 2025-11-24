@@ -41,13 +41,28 @@
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
         <div class="bg-white p-6 rounded-lg shadow-sm">
-            <h3 class="font-semibold text-gray-800">Nuomotojų augimas (6 mėn.)</h3>
+            <h3 class="font-semibold text-gray-800">Nuomotojų kumuliacinis augimas (12 mėn.)</h3>
+            <div class="relative h-80 mt-4">
+                <canvas id="landlordCumulativeChart"></canvas>
+            </div>
+        </div>
+        <div class="bg-white p-6 rounded-lg shadow-sm">
+            <h3 class="font-semibold text-gray-800">Nuomininkų kumuliacinis augimas (12 mėn.)</h3>
+            <div class="relative h-80 mt-4">
+                <canvas id="tenantCumulativeChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+        <div class="bg-white p-6 rounded-lg shadow-sm">
+            <h3 class="font-semibold text-gray-800">Nuomotojų augimas (12 mėn.)</h3>
             <div class="relative h-80 mt-4">
                 <canvas id="landlordGrowthChart"></canvas>
             </div>
         </div>
         <div class="bg-white p-6 rounded-lg shadow-sm">
-            <h3 class="font-semibold text-gray-800">Nuomininkų augimas (6 mėn.)</h3>
+            <h3 class="font-semibold text-gray-800">Nuomininkų augimas (12 mėn.)</h3>
             <div class="relative h-80 mt-4">
                 <canvas id="tenantGrowthChart"></canvas>
             </div>
@@ -118,19 +133,59 @@
 {% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        // Landlord Cumulative Growth Chart
+        const landlordCumulativeCtx = document.getElementById('landlordCumulativeChart').getContext('2d');
+        new Chart(landlordCumulativeCtx, {
+            type: 'line',
+            data: {
+                labels: JSON.parse('{{ landlord_cumulative_labels|safe }}'),
+                datasets: [{
+                    label: 'Iš viso nuomotojų',
+                    data: JSON.parse('{{ landlord_cumulative_data|safe }}'),
+                    borderColor: 'rgb(139, 92, 246)',
+                    backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+            }
+        });
+
+        // Tenant Cumulative Growth Chart
+        const tenantCumulativeCtx = document.getElementById('tenantCumulativeChart').getContext('2d');
+        new Chart(tenantCumulativeCtx, {
+            type: 'line',
+            data: {
+                labels: JSON.parse('{{ tenant_cumulative_labels|safe }}'),
+                datasets: [{
+                    label: 'Iš viso nuomininkų',
+                    data: JSON.parse('{{ tenant_cumulative_data|safe }}'),
+                    borderColor: 'rgb(20, 184, 166)',
+                    backgroundColor: 'rgba(20, 184, 166, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+            }
+        });
+
         // Landlord Growth Chart
         const landlordCtx = document.getElementById('landlordGrowthChart').getContext('2d');
         new Chart(landlordCtx, {
-            type: 'line',
+            type: 'bar',
             data: {
                 labels: JSON.parse('{{ landlord_growth_labels|safe }}'),
                 datasets: [{
                     label: 'Nauji nuomotojai',
                     data: JSON.parse('{{ landlord_growth_data|safe }}'),
                     borderColor: 'rgb(59, 130, 246)',
-                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                    fill: true,
-                    tension: 0.4
+                    backgroundColor: 'rgba(59, 130, 246, 0.7)',
                 }]
             },
             options: {
@@ -142,16 +197,14 @@
         // Tenant Growth Chart
         const tenantCtx = document.getElementById('tenantGrowthChart').getContext('2d');
         new Chart(tenantCtx, {
-            type: 'line',
+            type: 'bar',
             data: {
                 labels: JSON.parse('{{ tenant_growth_labels|safe }}'),
                 datasets: [{
                     label: 'Nauji nuomininkai',
                     data: JSON.parse('{{ tenant_growth_data|safe }}'),
                     borderColor: 'rgb(16, 185, 129)',
-                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                    fill: true,
-                    tension: 0.4
+                    backgroundColor: 'rgba(16, 185, 129, 0.7)',
                 }]
             },
             options: {

@@ -444,6 +444,52 @@ def stats_view(request):
     ).filter(problem_count__gt=0).order_by('-problem_count')
 
     # ==================================================================
+    # USER GROWTH DATA (Cumulative)
+    # ==================================================================
+    from django.contrib.auth.models import User
+    from .models import UserProfile
+    from collections import defaultdict
+    from datetime import datetime
+    
+    # Get all users with their profiles
+    users_with_profiles = User.objects.select_related('profile').all().order_by('date_joined')
+    
+    # Dictionary to store cumulative counts by month
+    monthly_data = defaultdict(lambda: {'landlords': 0, 'tenants': 0})
+    cumulative_landlords = 0
+    cumulative_tenants = 0
+    
+    for user in users_with_profiles:
+        # Get the month key (YYYY-MM format)
+        month_key = user.date_joined.strftime('%Y-%m')
+        
+        # Increment cumulative counts
+        if hasattr(user, 'profile') and user.profile.user_type == 'nuomotojas':
+            cumulative_landlords += 1
+        elif hasattr(user, 'profile') and user.profile.user_type == 'nuomininkas':
+            cumulative_tenants += 1
+        
+        # Store cumulative counts for this month
+        monthly_data[month_key] = {
+            'landlords': cumulative_landlords,
+            'tenants': cumulative_tenants
+        }
+    
+    # Convert to sorted lists for chart display
+    sorted_months = sorted(monthly_data.keys())
+    user_growth_labels = []
+    landlord_cumulative_data = []
+    tenant_cumulative_data = []
+    
+    for month in sorted_months:
+        # Convert YYYY-MM to Lithuanian month name and year
+        year, month_num = month.split('-')
+        month_label = f"{LITHUANIAN_MONTHS[int(month_num)]} {year}"
+        user_growth_labels.append(month_label)
+        landlord_cumulative_data.append(monthly_data[month]['landlords'])
+        tenant_cumulative_data.append(monthly_data[month]['tenants'])
+
+    # ==================================================================
     # CONTEXT
     # ==================================================================
     context = {
@@ -459,6 +505,10 @@ def stats_view(request):
         'total_properties_count': total_properties_count, 'total_expenses': total_expenses_for_chart,
         'income_labels': json.dumps(income_labels), 'income_data': json.dumps(income_data),
         'expenses_labels': json.dumps(expenses_labels), 'expenses_data': json.dumps(expenses_data),
+        # User growth data
+        'user_growth_labels': json.dumps(user_growth_labels),
+        'landlord_cumulative_data': json.dumps(landlord_cumulative_data),
+        'tenant_cumulative_data': json.dumps(tenant_cumulative_data),
         # Tab 2
         'profitability_labels': profitability_labels, 'profitability_profit_data': profitability_profit_data,
         'profitability_expenses_data': profitability_expenses_data,
@@ -1923,11 +1973,11 @@ def admin_dashboard(request):
     Prieinamas tik prisijungusiems supervartotojams.
     """
     # --- Duomenys statistikoms ir grafikams ---
-    six_months_ago = get_current_time(request) - timedelta(days=180)
+    twelve_months_ago = get_current_time(request) - timedelta(days=365)
     
     # Nuomotojų augimas
     landlord_growth_data = User.objects.filter(
-        date_joined__gte=six_months_ago,
+        date_joined__gte=twelve_months_ago,
         profile__user_type='nuomotojas'
     ).annotate(month=TruncMonth('date_joined')) \
     .values('month') \
@@ -1936,7 +1986,7 @@ def admin_dashboard(request):
 
     # Nuomininkų augimas
     tenant_growth_data = User.objects.filter(
-        date_joined__gte=six_months_ago,
+        date_joined__gte=twelve_months_ago,
         profile__user_type='nuomininkas'
     ).annotate(month=TruncMonth('date_joined')) \
     .values('month') \
@@ -1945,23 +1995,52 @@ def admin_dashboard(request):
     
     months_labels = []
     current_date = get_current_time(request).replace(day=1)
-    for i in range(5, -1, -1):
+    for i in range(11, -1, -1):
         month_date = current_date - timedelta(days=i*30)
         months_labels.append(month_date.strftime("%B"))
     
-    landlord_chart_data = [0] * 6
+    landlord_chart_data = [0] * 12
     for entry in landlord_growth_data:
         month_name = entry['month'].strftime("%B")
         if month_name in months_labels:
             index = months_labels.index(month_name)
             landlord_chart_data[index] = entry['count']
     
-    tenant_chart_data = [0] * 6
+    tenant_chart_data = [0] * 12
     for entry in tenant_growth_data:
         month_name = entry['month'].strftime("%B")
         if month_name in months_labels:
             index = months_labels.index(month_name)
             tenant_chart_data[index] = entry['count']
+
+    # --- KUMULIACINIAI DUOMENYS ---
+    # Skaičiuojame kumuliacinius augimo duomenis (iš viso vartotojų nuo pradžios iki kiekvieno mėnesio pabaigos)
+    landlord_cumulative_data = [0] * 12
+    tenant_cumulative_data = [0] * 12
+    
+    for i in range(12):
+        # Nustatome mėnesio pradžią ir pabaigą
+        month_offset = 11 - i
+        month_date = current_date - timedelta(days=month_offset*30)
+        month_start = month_date.replace(day=1)
+        
+        # Nustatome mėnesio pabaigą
+        if month_date.month == 12:
+            month_end = month_date.replace(year=month_date.year + 1, month=1, day=1) - timedelta(days=1)
+        else:
+            month_end = month_date.replace(month=month_date.month + 1, day=1) - timedelta(days=1)
+        
+        # Skaičiuojame visus nuomotojus, užsiregistravusius iki šio mėnesio pabaigos
+        landlord_cumulative_data[i] = User.objects.filter(
+            date_joined__lte=month_end,
+            profile__user_type='nuomotojas'
+        ).count()
+        
+        # Skaičiuojame visus nuomininkus, užsiregistravusius iki šio mėnesio pabaigos
+        tenant_cumulative_data[i] = User.objects.filter(
+            date_joined__lte=month_end,
+            profile__user_type='nuomininkas'
+        ).count()
 
     # --- NAUJA DALIS: Duomenys "Naujausiems įvykiams" ---
     recent_users = User.objects.order_by('-date_joined')[:5]
@@ -1990,11 +2069,16 @@ def admin_dashboard(request):
         'active_leases': Lease.objects.filter(status='active').count(),
         'monthly_income': total_monthly_income,
         'active_page': 'dashboard',
-        # Duomenys grafikams
+        # Duomenys grafikams (mėnesio augimas)
         'landlord_growth_labels': json.dumps(months_labels),
         'landlord_growth_data': json.dumps(landlord_chart_data),
         'tenant_growth_labels': json.dumps(months_labels),
         'tenant_growth_data': json.dumps(tenant_chart_data),
+        # Duomenys kumuliaciniams grafikams
+        'landlord_cumulative_labels': json.dumps(months_labels),
+        'landlord_cumulative_data': json.dumps(landlord_cumulative_data),
+        'tenant_cumulative_labels': json.dumps(months_labels),
+        'tenant_cumulative_data': json.dumps(tenant_cumulative_data),
         
         # Duomenys įvykių blokams
         'recent_events': sorted_events[:5], # Paimame 5 naujausius įvykius

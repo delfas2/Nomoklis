@@ -52,6 +52,10 @@
                     <p class="mt-1 text-sm text-gray-500">Bendra suma</p>
                 </div>
             </div>
+            <div class="bg-white p-6 rounded-lg shadow-md mt-8">
+                <h3 class="text-lg font-semibold text-gray-700 mb-4">Vartotojų Augimas (Kumuliacinis)</h3>
+                <div class="relative h-80"><canvas id="userGrowthChart"></canvas></div>
+            </div>
             <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mt-8">
                 <div class="lg:col-span-3 bg-white p-6 rounded-lg shadow-md flex flex-col">
                     <h3 class="text-lg font-semibold text-gray-700 mb-4">Mėnesinės pajamos (Visi NT)</h3>
@@ -73,7 +77,7 @@
                         <select name="year" onchange="this.form.submit()"
                             class="block w-32 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                             {% for year in available_years %}
-                            <option value="{{ year }}" {% if selected_year == year %}selected{% endif %}>{{ year }}
+                            <option value="{{ year }}" {% if selected_year==year %}selected{% endif %}>{{ year }}
                             </option>
                             {% endfor %}
                         </select>
@@ -81,7 +85,8 @@
                             class="block w-64 rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
                             <option value="">Visi NT Objektai</option>
                             {% for prop in all_user_properties %}
-                            <option value="{{ prop.id }}" {% if selected_property_id == prop.id|stringformat:"s" %}selected{% endif %}>{{ prop }}</option>
+                            <option value="{{ prop.id }}" {% if selected_property_id==prop.id|stringformat:"s"
+                                %}selected{% endif %}>{{ prop }}</option>
                             {% endfor %}
                         </select>
                     </form>
@@ -100,20 +105,66 @@
 {% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        const incomeCtx = document.getElementById('incomeChart').getContext('2d');
-        new Chart(incomeCtx, { type: 'bar', data: { labels: {{ income_labels| safe }}, datasets: [{ label: 'Pajamos (€)', data: {{ income_data| safe }}, backgroundColor: 'rgba(59, 130, 246, 0.5)', borderColor: 'rgba(59, 130, 246, 1)', borderWidth: 1, borderRadius: 4}]}, options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } }, plugins: { legend: { display: false } } }});
+        // User Growth Chart
+        const userGrowthCtx = document.getElementById('userGrowthChart').getContext('2d');
+        new Chart(userGrowthCtx, {
+            type: 'line',
+            data: {
+                labels: {{ user_growth_labels| safe }},
+        datasets: [
+        {
+            label: 'Nuomotojai',
+            data: {{ landlord_cumulative_data| safe }},
+        borderColor: 'rgba(59, 130, 246, 1)',
+        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        borderWidth: 2,
+        fill: true,
+        tension: 0.4
+                    },
+        {
+            label: 'Nuomininkai',
+            data: {{ tenant_cumulative_data| safe }},
+        borderColor: 'rgba(16, 185, 129, 1)',
+        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+        borderWidth: 2,
+        fill: true,
+        tension: 0.4
+                    }
+    ]
+            },
+        options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    precision: 0
+                }
+            }
+        },
+        plugins: {
+            legend: {
+                position: 'top'
+            }
+        }
+    }
+        });
+
+    const incomeCtx = document.getElementById('incomeChart').getContext('2d');
+    new Chart(incomeCtx, { type: 'bar', data: { labels: {{ income_labels| safe}}, datasets: [{ label: 'Pajamos (€)', data: {{ income_data| safe}}, backgroundColor: 'rgba(59, 130, 246, 0.5)', borderColor: 'rgba(59, 130, 246, 1)', borderWidth: 1, borderRadius: 4}]}, options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } }, plugins: { legend: { display: false } } }});
 
     const expensesCtx = document.getElementById('expensesChart').getContext('2d');
-    new Chart(expensesCtx, { type: 'doughnut', data: { labels: {{ expenses_labels| safe }}, datasets: [{ label: 'Išlaidos (€)', data: {{ expenses_data| safe }}, backgroundColor: ['rgba(239, 68, 68, 0.7)', 'rgba(245, 158, 11, 0.7)', 'rgba(59, 130, 246, 0.7)', 'rgba(16, 185, 129, 0.7)', 'rgba(107, 114, 128, 0.7)'], borderColor: '#ffffff', borderWidth: 2}]}, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }});
+    new Chart(expensesCtx, { type: 'doughnut', data: { labels: {{ expenses_labels| safe}}, datasets: [{ label: 'Išlaidos (€)', data: {{ expenses_data| safe}}, backgroundColor: ['rgba(239, 68, 68, 0.7)', 'rgba(245, 158, 11, 0.7)', 'rgba(59, 130, 246, 0.7)', 'rgba(16, 185, 129, 0.7)', 'rgba(107, 114, 128, 0.7)'], borderColor: '#ffffff', borderWidth: 2}]}, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }});
 
     const profitabilityCtx = document.getElementById('profitabilityChart').getContext('2d');
     new Chart(profitabilityCtx, {
         type: 'bar',
         data: {
-            labels: {{ profitability_labels| safe }},
+            labels: {{ profitability_labels| safe}},
         datasets: [
-        { label: 'Išlaidos (€)', data: {{ profitability_expenses_data| safe }}, backgroundColor: 'rgba(255, 99, 132, 0.7)'},
-        { label: 'Pelnas (€)', data: {{ profitability_profit_data| safe }}, backgroundColor: 'rgba(75, 192, 192, 0.7)'}
+        { label: 'Išlaidos (€)', data: {{ profitability_expenses_data| safe}}, backgroundColor: 'rgba(255, 99, 132, 0.7)'},
+        { label: 'Pelnas (€)', data: {{ profitability_profit_data| safe}}, backgroundColor: 'rgba(75, 192, 192, 0.7)'}
     ]
             },
         options: {
