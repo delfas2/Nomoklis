@@ -25,11 +25,15 @@ services:
       - .env
     ports:
       - "8000:8000"
-    volumes:
-      - .:/app
-      # - /app/staticfiles
-    # Nurodome, kad web servisas turi pasileisti tik po to, kai pasileis DB
-    command: sh -c "python3 manage.py migrate && python3 manage.py runserver 0.0.0.0:8000"
+    # The '.:/app' volume is commented out for production. In a production environment,
+    # the code should be copied into the image during the build process to create a
+    # stable, immutable artifact, which is already handled by the Dockerfile.
+    # volumes:
+    #   - .:/app
+    #
+    # The command is updated to first run database migrations and then start the
+    # production-ready Daphne ASGI server instead of the insecure development server.
+    command: sh -c "python3 manage.py migrate && daphne -b 0.0.0.0 -p 8000 Nomoklis.asgi:application"
     depends_on:
       - redis
       - mysql-db

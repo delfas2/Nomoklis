@@ -59,12 +59,12 @@
                     alt="{{ active_lease.property.street }}" class="w-full h-56 object-cover rounded-lg">
             </div>
             <div class="space-y-4">
-                <h3 class="text-2xl font-bold text-gray-800">{{ active_lease.property }}</h3>
+                <h3 class="text-2xl font-bold text-gray-800">{{ active_lease.property.street }} {{ active_lease.property.house_number }}{% if active_lease.property.flat_number %}-{{ active_lease.property.flat_number }}{% endif %}, {{ active_lease.property.city }}</h3>
                 <p class="text-md text-gray-600">Nuomotojas: {{ active_lease.property.owner.get_full_name }}</p>
                 <div class="border-t border-gray-200 pt-4 space-y-3 text-sm">
                     <div class="flex justify-between">
                         <span class="text-gray-600">Sutarties pradžia:</span>
-                        <span class="font-semibold text-gray-800">{{ active_lease.start_date }}</span>
+                        <span class="font-semibold text-gray-800">{{ active_lease.start_date|date:"Y-m-d" }}</span>
                     </div>
                     <div class="flex justify-between">
                         <span class="text-gray-600">Mėnesio įmoka:</span>
@@ -73,7 +73,7 @@
                     </div>
                     <div class="flex justify-between">
                         <span class="text-gray-600">Mokėjimo diena:</span>
-                        <span class="font-semibold text-gray-800">Kiekvieno mėn. 20 d.</span>
+                        <span class="font-semibold text-gray-800">Iki kiekvieno mėn. 20 d.</span>
                     </div>
 
                     {% if unpaid_invoice %}
@@ -151,8 +151,7 @@
             <li class="p-4 sm:p-6">
                 <div class="flex items-center justify-between flex-wrap">
                     <div>
-                        <p class="text-sm font-medium text-blue-600 truncate">{{ lease.property.street }}, {{
-                            lease.property.city }}</p>
+                        <p class="text-sm font-medium text-blue-600 truncate">{{ lease.property.street }} {{ lease.property.house_number }}{% if lease.property.flat_number %}-{{ lease.property.flat_number }}{% endif %}, {{ lease.property.city }}</p>
                         <p class="mt-1 text-sm text-gray-500">Nuomos kaina: {{ lease.rent_price|floatformat:"0" }} €/mėn
                         </p>
                     </div>
@@ -181,9 +180,10 @@
             <li class="p-4 sm:p-6">
                 <div class="flex items-center justify-between flex-wrap">
                     <div>
-                        <p class="text-sm font-medium text-gray-800 truncate">{{ lease.property.street }} {{
-                            lease.property.house_number }}{% if lease.property.flat_number %}-{{
-                            lease.property.flat_number }}{% endif %}, {{ lease.property.city }}</p>
+                        <p class="text-sm font-medium text-gray-800 truncate">{{ lease.property.street }}<!--
+--> {{ lease.property.house_number }}{% if lease.property.flat_number %}<!--
+-->-{{ lease.property.flat_number }}{% endif %},<!--
+--> {{ lease.property.city }}</p>
                         <div class="mt-1 flex items-center space-x-4 text-sm text-gray-500">
                             <span>Nuoma baigėsi: {{ lease.end_date|date:"Y-m-d" }}</span>
                             {% if lease.contract_file %}
