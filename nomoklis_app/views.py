@@ -520,6 +520,7 @@ def stats_view(request):
     return render(request, 'nomoklis_app/stats.html', context)
 
 from .utils import encode_room_name, decode_room_name, encrypt_id, decrypt_id
+from .models import Notification
 
 @login_required
 def landlord_contracts_page(request):
@@ -1274,6 +1275,12 @@ def tenant_problem_detail_view(request, encrypted_id):
             new_update.problem = problem
             new_update.author = request.user
             new_update.save()
+            # Create a notification for the problem owner (landlord)
+            Notification.objects.create(
+                recipient=problem.lease.property.owner,
+                message=f"Nuomininkas {request.user.get_full_name()} pakomentavo problemą: {problem.title}",
+                content_object=problem
+            )
             messages.success(request, "Jūsų komentaras pridėtas.")
             return redirect('tenant_problem_detail', encrypted_id=encrypted_id)
     else: # GET metodas
@@ -2557,6 +2564,12 @@ def support_ticket_detail_view(request, ticket_id):
             update.ticket = ticket
             update.user = request.user
             update.save()
+            # Create a notification for the admin
+            Notification.objects.create(
+                recipient=User.objects.filter(is_superuser=True).first(), # Assuming one admin for notifications
+                message=f"Vartotojas {request.user.get_full_name()} atsakė į užklausą: {ticket.subject}",
+                content_object=ticket
+            )
             messages.success(request, 'Jūsų atsakymas išsiųstas.')
             return redirect('support_ticket_detail', ticket_id=ticket.id)
     else:
@@ -2589,39 +2602,84 @@ def admin_support_ticket_list_view(request):
 @user_passes_test(lambda u: u.is_superuser, login_url='/accounts/login/')
 def admin_support_ticket_detail_view(request, ticket_id):
     ticket = get_object_or_404(SupportTicket, id=ticket_id)
-    updates = ticket.updates.all()
+    
     if request.method == 'POST':
-        form = AdminSupportTicketMessageForm(request.POST)
-        if form.is_valid():
-            update = form.save(commit=False)
-            update.ticket = ticket
-            update.user = request.user # Admin user
-            update.save()
-            
+        message_form = AdminSupportTicketMessageForm(request.POST)
+        status_form = AdminSupportTicketUpdateForm(request.POST, instance=ticket)
+        
+        # Handle message reply
+        if message_form.is_valid():
+            message = message_form.cleaned_data.get('message')
+            if message:  # Tik jei įvestas atsakymas
+                # Sukuriamas atsakymas
+                SupportTicketUpdate.objects.create(
+                    ticket=ticket,
+                    user=request.user,
+                    message=message
+                )
+                
+                # Siųsti email vartotojui
+                try:
+                    from django.core.mail import send_mail
+                    from django.conf import settings
+                    
+                    subject = f'Atsakymas į jūsų užklausą: {ticket.subject}'
+                    message_text = f"""
+Sveiki {ticket.user.get_full_name()},
+
+Administratorius atsakė į jūsų pagalbos užklausą.
+
+Užklausa: {ticket.subject}
+Atsakymas: {message}
+
+Galite peržiūrėti visą pokalbį prisijungę prie sistemos.
+
+---
+Nomoklis Komanda
+                    """
+                    
+                    send_mail(
+                        subject,
+                        message_text,
+                        settings.DEFAULT_FROM_EMAIL,
+                        [ticket.user.email],
+                        fail_silently=True,
+                    )
+                except Exception as e:
+                    print(f"Klaida siunčiant email: {e}")
+        
+        # Handle status update
+        if status_form.is_valid():
             # Pakeičiame statusą, jei adminas pasirinko
-            new_status = request.POST.get('status')
+            new_status = status_form.cleaned_data.get('status')
             if new_status and new_status != ticket.status:
                 ticket.status = new_status
                 ticket.save()
                 # Pranešimas vartotojui apie statuso pasikeitimą
                 SupportTicketUpdate.objects.create(
-                    ticket=ticket, 
-                    user=request.user, 
-                    comment=f"Būsena pakeista į '{ticket.get_status_display()}'",
-                    is_internal=True # Vartotojas nemato šio įrašo
+                    ticket=ticket,
+                    user=request.user,
+                    message=f"Būsena pakeista į '{ticket.get_status_display()}'",
+                    is_internal=True
                 )
-
-            messages.success(request, 'Atsakymas išsiųstas vartotojui.')
-            return redirect('admin_support_ticket_detail', ticket_id=ticket.id)
-    else: # GET metodas
-        form = AdminSupportTicketMessageForm()
-
-    status_form = AdminSupportTicketUpdateForm(instance=ticket)
+                # Notification for status change
+                Notification.objects.create(
+                    recipient=ticket.user,
+                    message=f"Jūsų užklausos būsena pakeista į {ticket.get_status_display()}",
+                    content_object=ticket
+                )
+            else:
+                status_form.save() # Save other fields if status didn't change
+        
+        messages.success(request, 'Atsakymas išsiųstas vartotojui.')
+        return redirect('admin_support_ticket_detail', ticket_id=ticket.id)
+    else:  # GET metodas
+        message_form = AdminSupportTicketMessageForm()
+        status_form = AdminSupportTicketUpdateForm(instance=ticket)
 
     context = {
         'ticket': ticket,
-        'updates': updates,
-        'form': form,
+        'message_form': message_form,
         'status_form': status_form,
         'active_page': 'support_tickets',
     }
