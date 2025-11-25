@@ -246,13 +246,39 @@
 
             const markers = L.layerGroup().addTo(map);
             const markerObjects = {};
-            fetch("{% url 'property_locations_api' %}")
+
+            const colorMapping = {
+                'butas': '#3B82F6', // blue-500
+                'namas': '#10B981', // green-500
+                'kambarys': '#F59E0B', // amber-500
+                'default': '#6B7280' // gray-500
+            };
+
+            const getIcon = (propertyType) => {
+                const color = colorMapping[propertyType] || colorMapping['default'];
+                const svgIconHtml = `
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="40" viewBox="0 0 24 40">
+                        <path d="M12 0C7.03 0 3 4.03 3 9c0 5.25 9 16 9 16s9-10.75 9-16c0-4.97-4.03-9-9-9z" fill="${color}" stroke="#fff" stroke-width="1.5"/>
+                        <circle cx="12" cy="9" r="3" fill="white"/>
+                    </svg>`;
+
+                return L.divIcon({
+                    html: svgIconHtml,
+                    className: '',
+                    iconSize: [28, 40],
+                    iconAnchor: [14, 40],
+                    popupAnchor: [0, -40]
+                });
+            };
+
+            const apiUrl = "{% url 'property_locations_api' %}" + window.location.search;
+            fetch(apiUrl)
                 .then(response => response.json())
                 .then(data => {
                     data.forEach(prop => {
                         const propId = prop.popup_url.match(/(\d+)\/?$/)[1];
                         if (prop.lat && prop.lon) {
-                            const marker = L.marker([prop.lat, prop.lon]);
+                            const marker = L.marker([prop.lat, prop.lon], { icon: getIcon(prop.property_type) });
                             const popupContent = `<div class="p-1"><p class="font-bold">${prop.title}</p><p>${prop.price}</p><button data-url="${prop.popup_url}" class="show-details-btn text-blue-600 hover:underline cursor-pointer font-semibold">Daugiau</button></div>`;
                             marker.bindPopup(popupContent);
                             markers.addLayer(marker);
