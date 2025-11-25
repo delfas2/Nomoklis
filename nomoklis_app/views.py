@@ -444,52 +444,6 @@ def stats_view(request):
     ).filter(problem_count__gt=0).order_by('-problem_count')
 
     # ==================================================================
-    # USER GROWTH DATA (Cumulative)
-    # ==================================================================
-    from django.contrib.auth.models import User
-    from .models import UserProfile
-    from collections import defaultdict
-    from datetime import datetime
-    
-    # Get all users with their profiles
-    users_with_profiles = User.objects.select_related('profile').all().order_by('date_joined')
-    
-    # Dictionary to store cumulative counts by month
-    monthly_data = defaultdict(lambda: {'landlords': 0, 'tenants': 0})
-    cumulative_landlords = 0
-    cumulative_tenants = 0
-    
-    for user in users_with_profiles:
-        # Get the month key (YYYY-MM format)
-        month_key = user.date_joined.strftime('%Y-%m')
-        
-        # Increment cumulative counts
-        if hasattr(user, 'profile') and user.profile.user_type == 'nuomotojas':
-            cumulative_landlords += 1
-        elif hasattr(user, 'profile') and user.profile.user_type == 'nuomininkas':
-            cumulative_tenants += 1
-        
-        # Store cumulative counts for this month
-        monthly_data[month_key] = {
-            'landlords': cumulative_landlords,
-            'tenants': cumulative_tenants
-        }
-    
-    # Convert to sorted lists for chart display
-    sorted_months = sorted(monthly_data.keys())
-    user_growth_labels = []
-    landlord_cumulative_data = []
-    tenant_cumulative_data = []
-    
-    for month in sorted_months:
-        # Convert YYYY-MM to Lithuanian month name and year
-        year, month_num = month.split('-')
-        month_label = f"{LITHUANIAN_MONTHS[int(month_num)]} {year}"
-        user_growth_labels.append(month_label)
-        landlord_cumulative_data.append(monthly_data[month]['landlords'])
-        tenant_cumulative_data.append(monthly_data[month]['tenants'])
-
-    # ==================================================================
     # CONTEXT
     # ==================================================================
     context = {
@@ -505,10 +459,6 @@ def stats_view(request):
         'total_properties_count': total_properties_count, 'total_expenses': total_expenses_for_chart,
         'income_labels': json.dumps(income_labels), 'income_data': json.dumps(income_data),
         'expenses_labels': json.dumps(expenses_labels), 'expenses_data': json.dumps(expenses_data),
-        # User growth data
-        'user_growth_labels': json.dumps(user_growth_labels),
-        'landlord_cumulative_data': json.dumps(landlord_cumulative_data),
-        'tenant_cumulative_data': json.dumps(tenant_cumulative_data),
         # Tab 2
         'profitability_labels': profitability_labels, 'profitability_profit_data': profitability_profit_data,
         'profitability_expenses_data': profitability_expenses_data,
@@ -870,8 +820,11 @@ def property_search_view(request):
         is_furnished = request.GET.get('is_furnished')
         has_appliances = request.GET.get('has_appliances')
         residence_declaration_allowed = request.GET.get('residence_declaration_allowed')
+        property_type = request.GET.get('property_type')
 
         # Filtravimo logika
+        if property_type:
+            properties = properties.filter(property_type=property_type)
         if city:
             properties = properties.filter(city__icontains=city)
         if min_price:
@@ -1907,6 +1860,52 @@ def property_locations_api(request):
         longitude__isnull=False
     )
 
+    # --- PANAUDOJAME FILTRAVIMO LOGIKĄ IŠ property_search_view ---
+    city = request.GET.get('city')
+    min_price = request.GET.get('min_price')
+    max_price = request.GET.get('max_price')
+    min_rooms = request.GET.get('min_rooms')
+    max_rooms = request.GET.get('max_rooms')
+    min_area = request.GET.get('min_area')
+    max_area = request.GET.get('max_area')
+    has_balcony = request.GET.get('has_balcony')
+    has_parking = request.GET.get('has_parking')
+    pets_allowed = request.GET.get('pets_allowed')
+    is_furnished = request.GET.get('is_furnished')
+    has_appliances = request.GET.get('has_appliances')
+    residence_declaration_allowed = request.GET.get('residence_declaration_allowed')
+    property_type = request.GET.get('property_type')
+
+    if property_type:
+        properties = properties.filter(property_type=property_type)
+    if city:
+        properties = properties.filter(city__icontains=city)
+    if min_price:
+        properties = properties.filter(rent_price__gte=min_price)
+    if max_price:
+        properties = properties.filter(rent_price__lte=max_price)
+    if min_rooms:
+        properties = properties.filter(rooms__gte=min_rooms)
+    if max_rooms:
+        properties = properties.filter(rooms__lte=max_rooms)
+    if min_area:
+        properties = properties.filter(area__gte=min_area)
+    if max_area:
+        properties = properties.filter(area__lte=max_area)
+    if has_balcony:
+        properties = properties.filter(has_balcony=True)
+    if has_parking:
+        properties = properties.filter(has_parking=True)
+    if pets_allowed:
+        properties = properties.filter(pets_allowed=True)
+    if is_furnished:
+        properties = properties.filter(is_furnished=True)
+    if has_appliances:
+        properties = properties.filter(has_appliances=True)
+    if residence_declaration_allowed:
+        properties = properties.filter(residence_declaration_allowed=True)
+    # --- FILTRAVIMO PABAIGA ---
+
     property_list = []
     for prop in properties:
         # Gauname pirmąją nuotrauką, jei ji yra
@@ -1920,7 +1919,7 @@ def property_locations_api(request):
             'price': f"{prop.rent_price} €/mėn.",
             'popup_url': reverse('property_detail_view', args=[prop.id]),
             # --- PRIDĖTI LAUKAI ---
-            'property_type': prop.get_property_type_display(),
+            'property_type': prop.property_type,
             'image_url': image_url,
             'rooms': prop.rooms,
             'area': prop.area,
@@ -2616,6 +2615,13 @@ def admin_support_ticket_detail_view(request, ticket_id):
                     ticket=ticket,
                     user=request.user,
                     message=message
+                )
+                
+                # Create a notification for the user
+                Notification.objects.create(
+                    recipient=ticket.user,
+                    message="Administratorius atsakė į jūsų pagalbos užklausą.",
+                    content_object=ticket
                 )
                 
                 # Siųsti email vartotojui

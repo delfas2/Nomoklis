@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="lt">
 <head>
@@ -7,6 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/klaro@latest/dist/klaro.min.css" />
     <style>
         body { font-family: 'Inter', sans-serif; }
         .sidebar-active { background-color: #eff6ff; color: #1d4ed8; font-weight: 600; }
@@ -33,6 +35,10 @@
     </div>
 
     {% block modals %}{% endblock %}
+
+    <script defer src="{% static 'js/klaro-config.js' %}"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/klaro@latest/dist/klaro.min.js"></script>
+    
     {% block extra_js %}{% endblock %}
 </body>
 </html>

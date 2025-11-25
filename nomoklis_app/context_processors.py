@@ -1,7 +1,7 @@
 # failas: nomoklis_app/context_processors.py
 
 from django.contrib.contenttypes.models import ContentType
-from .models import ChatMessage, Notification, ProblemReport, ProblemUpdate
+from .models import ChatMessage, Notification, ProblemReport, ProblemUpdate, SupportTicket
 from django.db.models import Q
 
 def unread_messages_count(request):
@@ -27,10 +27,22 @@ def unread_messages_count(request):
             ).count()
         except:
             problem_badge_count = 0
+            
+        # Support ticket pranešimų skaičius
+        try:
+            support_ticket_ct = ContentType.objects.get_for_model(SupportTicket)
+            support_ticket_badge_count = Notification.objects.filter(
+                recipient=request.user,
+                is_read=False,
+                content_type=support_ticket_ct
+            ).count()
+        except:
+            support_ticket_badge_count = 0
 
         return {
             'unread_count': message_count,
             'notification_count': notification_count,
-            'problem_badge_count': problem_badge_count
+            'problem_badge_count': problem_badge_count,
+            'support_ticket_badge_count': support_ticket_badge_count
         }
-    return {'unread_count': 0, 'notification_count': 0, 'problem_badge_count': 0}
+    return {'unread_count': 0, 'notification_count': 0, 'problem_badge_count': 0, 'support_ticket_badge_count': 0}
